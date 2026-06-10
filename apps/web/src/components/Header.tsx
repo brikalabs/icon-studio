@@ -22,6 +22,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { AboutDialog } from "../features/about/AboutDialog";
+import { MOD_KEY, SHIFT_KEY } from "../lib/shortcuts";
 import { copyShareLink, copySvg, exportSvg, randomizeSpec, startFresh } from "../lib/spec-actions";
 import { useCanRedo, useCanUndo, useEditorStore, useFileName } from "../state/editor-store";
 
@@ -65,7 +66,7 @@ export function Header() {
             <TooltipContent className="flex items-center gap-1.5">
               Undo
               <KbdGroup>
-                <Kbd>⌘</Kbd>
+                <Kbd>{MOD_KEY}</Kbd>
                 <Kbd>Z</Kbd>
               </KbdGroup>
             </TooltipContent>
@@ -85,8 +86,8 @@ export function Header() {
             <TooltipContent className="flex items-center gap-1.5">
               Redo
               <KbdGroup>
-                <Kbd>⇧</Kbd>
-                <Kbd>⌘</Kbd>
+                <Kbd>{SHIFT_KEY}</Kbd>
+                <Kbd>{MOD_KEY}</Kbd>
                 <Kbd>Z</Kbd>
               </KbdGroup>
             </TooltipContent>
@@ -144,7 +145,10 @@ export function Header() {
         >
           <Search className="size-3" />
           <span className="hidden xl:inline">Search...</span>
-          <Kbd>⌘K</Kbd>
+          <KbdGroup>
+            <Kbd>{MOD_KEY}</Kbd>
+            <Kbd>K</Kbd>
+          </KbdGroup>
         </button>
         <div className="flex items-center">
           <Button onClick={exportSvg} size="sm" className="rounded-r-none">

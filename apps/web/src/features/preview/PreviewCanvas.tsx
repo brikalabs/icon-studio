@@ -257,10 +257,9 @@ export function PreviewCanvas() {
           </div>
 
           {/* Toolbar: mask selector + size readout + zoom, treated as one family */}
-          <div className="flex items-center gap-2 rounded-lg border bg-card/80 px-3 py-1.5 shadow-sm backdrop-blur-sm">
+          <div className="flex items-center gap-1 rounded-lg border bg-card/80 p-1 shadow-sm backdrop-blur-sm">
             <ToggleGroup
               type="single"
-              variant="outline"
               size="sm"
               value={previewMask}
               onValueChange={(value) => {
@@ -268,6 +267,7 @@ export function PreviewCanvas() {
                 setPreviewMask(parsed.success ? parsed.data : "square");
               }}
               aria-label="Preview mask shape"
+              className="gap-0.5"
             >
               {MASK_OPTIONS.map((option) => (
                 <ToggleGroupItem
@@ -275,17 +275,20 @@ export function PreviewCanvas() {
                   value={option.id}
                   aria-label={`${option.label} preview`}
                   title={option.label}
+                  className="size-7 rounded-md p-0"
                 >
-                  <option.icon />
+                  <option.icon className="size-4" />
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
 
-            <div className="h-4 w-px bg-border" aria-hidden="true" />
+            <div className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
 
-            <span className="font-mono text-muted-foreground text-xs">{spec.canvasSize} px</span>
+            <span className="px-1 font-mono text-muted-foreground text-xs tabular-nums">
+              {spec.canvasSize} px
+            </span>
 
-            <div className="h-4 w-px bg-border" aria-hidden="true" />
+            <div className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
 
             <Select
               value={String(zoom)}
@@ -298,14 +301,14 @@ export function PreviewCanvas() {
             >
               <SelectTrigger
                 size="sm"
-                className="w-20 border-0 bg-transparent shadow-none"
+                className="h-7 w-fit gap-1 border-0 bg-transparent px-2 font-mono text-xs tabular-nums shadow-none"
                 aria-label="Preview zoom"
               >
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent align="end">
                 {ZOOM_OPTIONS.map((option) => (
-                  <SelectItem key={option} value={String(option)}>
+                  <SelectItem key={option} value={String(option)} className="font-mono text-xs">
                     {Math.round(option * 100)}%
                   </SelectItem>
                 ))}
