@@ -1,0 +1,21 @@
+{
+  "name": "@brika/icon-studio-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure SVG composition engine for Brika plugin icons",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "lucide-static": "^1.17.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

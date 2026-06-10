@@ -1,0 +1,27 @@
+{
+  "name": "icon-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brikalabs/icon-studio.git"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter @brika/icon-studio-web dev",
+    "build": "bun run --filter @brika/icon-studio-web build",
+    "deploy": "bun run --filter @brika/icon-studio-web deploy",
+    "test": "bun test packages",
+    "typecheck": "bun run --filter '*' typecheck",
+    "lint": "bunx --bun biome check ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.16",
+    "@types/bun": "^1.3.5",
+    "typescript": "^6.0.3"
+  }
+}
