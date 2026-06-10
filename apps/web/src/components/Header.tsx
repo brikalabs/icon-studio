@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@brika/clay/components/dropdown-menu";
 import { Input } from "@brika/clay/components/input";
-import { Kbd } from "@brika/clay/components/kbd";
+import { Kbd, KbdGroup } from "@brika/clay/components/kbd";
 import { Separator } from "@brika/clay/components/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@brika/clay/components/tooltip";
 import {
@@ -62,7 +62,13 @@ export function Header() {
                 <Undo2 />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Undo (⌘Z)</TooltipContent>
+            <TooltipContent className="flex items-center gap-1.5">
+              Undo
+              <KbdGroup>
+                <Kbd>⌘</Kbd>
+                <Kbd>Z</Kbd>
+              </KbdGroup>
+            </TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -76,7 +82,14 @@ export function Header() {
                 <Redo2 />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Redo (⇧⌘Z)</TooltipContent>
+            <TooltipContent className="flex items-center gap-1.5">
+              Redo
+              <KbdGroup>
+                <Kbd>⇧</Kbd>
+                <Kbd>⌘</Kbd>
+                <Kbd>Z</Kbd>
+              </KbdGroup>
+            </TooltipContent>
           </Tooltip>
         </div>
 
