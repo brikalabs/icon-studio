@@ -23,7 +23,7 @@ const MIN_FIT_SIZE = 220;
 /** Drag snaps to the canvas center inside this many display pixels. */
 const SNAP_DISTANCE = 6;
 
-const ZOOM_OPTIONS: readonly number[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
+const ZOOM_OPTIONS: readonly number[] = [0.25, 0.5, 1, 2];
 
 /** Superellipse |x|^n + |y|^n = 1 sampled as a percentage polygon (iOS-style squircle at n=5). */
 function superellipseClip(exponent: number, samples: number): string {

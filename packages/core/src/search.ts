@@ -4,7 +4,7 @@ import type { IconLibraryId } from "./types";
 /**
  * Name-and-keyword substring search over one icon library.
  * Ranks name prefixes first, then name substrings, then keyword matches
- * (lucide/tabler tags, brand titles). An empty query returns the library's
+ * (lucide tags, brand titles). An empty query returns the library's
  * full catalogue. Lazy libraries return nothing until ensureIconLibrary
  * has resolved.
  */

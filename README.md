@@ -12,13 +12,12 @@ Built with [Clay](https://clay.brika.dev), Brika's design system.
 ## Features
 
 - **Every icon you can think of, plus your own artwork**: bundled
-  [lucide](https://lucide.dev) (1700+), [Tabler](https://tabler.io/icons)
-  (5000+), [Heroicons](https://heroicons.com) (320+), and
-  [simple-icons](https://simpleicons.org) brand marks (3400+), the "All" tab
-  searching 200,000+ icons across every set via the
-  [Iconify](https://iconify.design) API, or any SVG file via drag-and-drop.
-  Each bundled catalogue beyond lucide is a lazy-loaded chunk; Iconify glyphs
-  are fetched on demand.
+  [lucide](https://lucide.dev) (1700+),
+  [simple-icons](https://simpleicons.org) brand marks (3400+, lazy chunk),
+  and an "All" library searching 200,000+ icons across every set (Tabler,
+  Heroicons, Material, and 200 more) via the
+  [Iconify](https://iconify.design) API, fetched on demand. Or drop in any
+  SVG file, or type a monogram.
 - **Browse, not just search**: the All tab lists every Iconify set grouped by
   category (with counts and licenses); click into a set and scroll, glyphs
   stream in as they become visible.
@@ -71,16 +70,12 @@ bun packages/cli/src/index.ts --help
 bun packages/cli/src/index.ts bell --preset sunset -o icon.svg
 bun packages/cli/src/index.ts rocket --stops "3F5EFB-9D50BB-FC466B" --angle 120 --rotate 15
 bun packages/cli/src/index.ts github --lib brand --bg "#18181B"
-bun packages/cli/src/index.ts bolt --lib tabler --preset midnight
+bun packages/cli/src/index.ts tabler:bolt --lib iconify --preset midnight
 bun packages/cli/src/index.ts mdi:rocket-launch --lib iconify --preset ocean
 bun packages/cli/src/index.ts database --bg "#18181B" --icon-color "#38EF7D" --noise 0.2
-bun packages/cli/src/index.ts --search alarm --lib hero
+bun packages/cli/src/index.ts --search alarm --lib iconify
 bun packages/cli/src/index.ts --custom logo.svg --preset ocean
 ```
-
-Tabler and Heroicons catalogues are vendored into `packages/core/src/data/`;
-refresh them after bumping `@tabler/icons` or `heroicons` with
-`bun run sync:icons`.
 
 The repo's own `apps/web/public/favicon.svg` is generated with it:
 
@@ -104,5 +99,5 @@ Manual deploy: `bun run deploy` (requires `wrangler login`).
 
 ## License
 
-MIT. Bundled icon data keeps its upstream licenses (see
-`packages/core/src/data/NOTICE.md` and the per-set licenses shown in the app).
+MIT. Icon sets keep their upstream licenses, shown per set in the app's
+collection browser.

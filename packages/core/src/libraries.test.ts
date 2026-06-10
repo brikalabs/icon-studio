@@ -10,43 +10,28 @@ import {
 } from "./libraries";
 import { searchIcons } from "./search";
 
-beforeAll(async () => {
-  await Promise.all([
-    ensureIconLibrary("tabler"),
-    ensureIconLibrary("hero"),
-    ensureIconLibrary("brand"),
-  ]);
-});
+beforeAll(() => ensureIconLibrary("brand"));
 
 describe("icon library registry", () => {
-  test("lists the five libraries in display order", () => {
-    expect(iconLibraries.map((library) => library.id)).toEqual([
-      "lucide",
-      "tabler",
-      "hero",
-      "brand",
-      "iconify",
-    ]);
+  test("lists the three libraries in display order", () => {
+    expect(iconLibraries.map((library) => library.id)).toEqual(["lucide", "brand", "iconify"]);
   });
 
-  test("lucide is ready without loading", () => {
+  test("lucide and iconify are ready without loading", () => {
     expect(isIconLibraryReady("lucide")).toBe(true);
+    expect(isIconLibraryReady("iconify")).toBe(true);
   });
 
   test("catalogue sizes", () => {
     expect(getIconNames("lucide").length).toBeGreaterThan(1500);
-    expect(getIconNames("tabler").length).toBeGreaterThan(5000);
-    expect(getIconNames("hero").length).toBeGreaterThan(300);
     expect(getIconNames("brand").length).toBeGreaterThan(3000);
   });
 
-  test("stroke libraries expose stroke glyphs on the 24 grid", () => {
-    for (const library of ["lucide", "tabler", "hero"] as const) {
-      const glyph = getIconGlyph(library, "bell");
-      expect(glyph?.kind).toBe("stroke");
-      if (glyph?.kind === "stroke") {
-        expect(glyph.node.length).toBeGreaterThan(0);
-      }
+  test("lucide exposes stroke glyphs on the 24 grid", () => {
+    const glyph = getIconGlyph("lucide", "bell");
+    expect(glyph?.kind).toBe("stroke");
+    if (glyph?.kind === "stroke") {
+      expect(glyph.node.length).toBeGreaterThan(0);
     }
   });
 
@@ -65,7 +50,6 @@ describe("icon library registry", () => {
 
   test("search terms come from tags and brand titles", () => {
     expect(getIconTerms("lucide", "bell").length).toBeGreaterThan(0);
-    expect(getIconTerms("tabler", "bell").length).toBeGreaterThan(0);
     expect(getIconTerms("brand", "github")).toEqual(["github"]);
   });
 
@@ -85,9 +69,7 @@ describe("searchIcons", () => {
     expect(results).toContain("bell-off");
   });
 
-  test("searches every library", () => {
-    expect(searchIcons("tabler", "bell", 25)[0]).toBe("bell");
-    expect(searchIcons("hero", "bell", 25)[0]).toBe("bell");
+  test("searches brands by slug", () => {
     expect(searchIcons("brand", "spotify", 25)).toContain("spotify");
   });
 
@@ -97,6 +79,6 @@ describe("searchIcons", () => {
 
   test("empty query returns the full catalogue", () => {
     expect(searchIcons("lucide", " ").length).toBeGreaterThan(1500);
-    expect(searchIcons("tabler", "").length).toBeGreaterThan(5000);
+    expect(searchIcons("brand", "").length).toBeGreaterThan(3000);
   });
 });

@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { ensureIconLibrary, searchIcons } from "@brika/icon-studio-core";
 import { parseCliArgs } from "./args";
 
-beforeAll(() => Promise.all([ensureIconLibrary("tabler"), ensureIconLibrary("brand")]));
+beforeAll(() => ensureIconLibrary("brand"));
 
 const noFile = (): string => {
   throw new Error("no file access expected");
@@ -20,13 +20,9 @@ describe("parseCliArgs", () => {
     const brand = parseCliArgs(["github", "--lib", "brand"], noFile);
     expect(brand.spec.icon).toEqual({ type: "brand", name: "github" });
     expect(brand.outFile).toBe("github.svg");
-    expect(parseCliArgs(["bolt", "--lib", "tabler"], noFile).spec.icon).toEqual({
-      type: "tabler",
-      name: "bolt",
-    });
-    expect(parseCliArgs(["bell", "--lib", "hero"], noFile).spec.icon).toEqual({
-      type: "hero",
-      name: "bell",
+    expect(parseCliArgs(["tabler:bolt", "--lib", "iconify"], noFile).spec.icon).toEqual({
+      type: "iconify",
+      name: "tabler:bolt",
     });
   });
 
@@ -160,7 +156,7 @@ describe("parseCliArgs", () => {
     expect(() => parseCliArgs(["bell", "--bg", "red"], noFile)).toThrow("hex color");
     expect(() => parseCliArgs(["bell", "--preset", "nope"], noFile)).toThrow("unknown preset");
     expect(() => parseCliArgs(["bell", "--lib", "nope"], noFile)).toThrow(
-      "--lib expects one of lucide, tabler, hero, brand",
+      "--lib expects one of lucide, brand, iconify",
     );
     expect(() => parseCliArgs(["bell", "--stops", "3F5EFB"], noFile)).toThrow("at least two");
     expect(() => parseCliArgs(["bell", "--from", "#FFFFFF"], noFile)).toThrow(
@@ -174,8 +170,7 @@ describe("searchIcons via CLI contract", () => {
     expect(searchIcons("lucide", "bell", 25)[0]).toBe("bell");
   });
 
-  test("brand and tabler searches find slugs", () => {
+  test("brand searches find slugs", () => {
     expect(searchIcons("brand", "spotify", 25)).toContain("spotify");
-    expect(searchIcons("tabler", "bolt", 25)).toContain("bolt");
   });
 });

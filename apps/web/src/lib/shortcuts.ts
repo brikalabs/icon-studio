@@ -13,7 +13,7 @@ export const KEYBOARD_SHORTCUTS: readonly ShortcutEntry[] = [
   { keys: ["⇧", "⌘", "Z"], description: "Redo" },
   { keys: ["⌘", "S"], description: "Export SVG" },
   { keys: ["⇧", "⌘", "C"], description: "Copy SVG markup" },
-  { keys: ["1", "5"], description: "Switch icon library (1 to 5)" },
+  { keys: ["1", "3"], description: "Switch icon library (1 to 3)" },
   { keys: ["/"], description: "Focus icon search" },
   { keys: ["M"], description: "Cycle preview mask" },
   { keys: ["↑↓←→"], description: "Nudge icon by 1 px (canvas focused), ⇧ for 10 px" },

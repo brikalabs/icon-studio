@@ -119,16 +119,16 @@ describe("URL codec", () => {
     };
     expect(specToSearchParams(spec).toString()).toBe("i=spotify&l=brand&c=101010");
 
-    const tabler: IconSpec = {
+    const iconify: IconSpec = {
       ...createDefaultIconSpec(),
-      icon: { type: "tabler", name: "bell" },
+      icon: { type: "iconify", name: "tabler:bolt" },
     };
-    expect(specToSearchParams(tabler).toString()).toBe("i=bell&l=tabler");
-    expect(roundTrip(tabler)).toEqual(tabler);
+    expect(specToSearchParams(iconify).toString()).toBe("i=tabler%3Abolt&l=iconify");
+    expect(roundTrip(iconify)).toEqual(iconify);
   });
 
   test("an unknown library falls back to lucide", () => {
-    const decoded = specFromSearchParams(new URLSearchParams("i=bell&l=nope"));
+    const decoded = specFromSearchParams(new URLSearchParams("i=bell&l=tabler"));
     expect(decoded.icon).toEqual({ type: "lucide", name: "bell" });
   });
 

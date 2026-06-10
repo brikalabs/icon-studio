@@ -191,7 +191,7 @@ export function IconControls() {
         unit="°"
       />
 
-      {spec.icon.type === "lucide" || spec.icon.type === "tabler" || spec.icon.type === "hero" ? (
+      {spec.icon.type === "lucide" ? (
         <SliderRow
           label="Stroke"
           value={spec.strokeWidth}

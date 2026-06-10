@@ -10,7 +10,6 @@
     "isolatedModules": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "allowArbitraryExtensions": true,
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,

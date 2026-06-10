@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { type IconNode, iconNodeSchema } from "./icon-node";
+import type { IconNode } from "./icon-node";
 import { getIconifyCachedNames, getIconifyIcon } from "./iconify";
 import { getLucideIconNode, getLucideIconTags, lucideIconNames } from "./lucide";
 import type { IconLibraryId } from "./types";
 
 /**
- * How a glyph is painted: stroked outlines on the 24 grid (lucide, tabler,
- * hero), filled paths (brands), or raw Iconify body markup with its own grid.
+ * How a glyph is painted: stroked outlines on the 24 grid (lucide),
+ * filled paths (brands), or raw Iconify body markup with its own grid.
  */
 export type GlyphKind = "stroke" | "fill" | "body";
 
@@ -24,11 +24,13 @@ export interface IconLibraryInfo {
   readonly label: string;
 }
 
-/** The searchable icon libraries, in display order. */
+/**
+ * The searchable icon libraries, in display order. Other popular sets
+ * (Tabler, Heroicons, Material, ...) live inside "All": the full Iconify
+ * catalogue with its per-set browser.
+ */
 export const iconLibraries: readonly IconLibraryInfo[] = [
   { id: "lucide", label: "Lucide" },
-  { id: "tabler", label: "Tabler" },
-  { id: "hero", label: "Hero" },
   { id: "brand", label: "Brands" },
   { id: "iconify", label: "All" },
 ];
@@ -53,23 +55,6 @@ function nodeState(
     },
     terms,
   };
-}
-
-const catalogueSchema = z.object({
-  icons: z.record(z.string(), iconNodeSchema),
-  terms: z.record(z.string(), z.array(z.string())),
-});
-
-/** Vendored catalogues (see scripts/sync-icon-data.ts). */
-function catalogueState(data: unknown): LibraryState {
-  const catalogue = catalogueSchema.parse(data);
-  const names = Object.keys(catalogue.icons);
-  return nodeState(
-    "stroke",
-    () => names,
-    (name) => catalogue.icons[name],
-    (name) => catalogue.terms[name] ?? [],
-  );
 }
 
 const brandIconSchema = z.object({
@@ -121,8 +106,6 @@ const states = new Map<IconLibraryId, LibraryState>([
 const pending = new Map<IconLibraryId, Promise<void>>();
 
 const loaders: Record<Exclude<IconLibraryId, "lucide" | "iconify">, () => Promise<LibraryState>> = {
-  tabler: async () => catalogueState((await import("./data/tabler.json")).default),
-  hero: async () => catalogueState((await import("./data/heroicons.json")).default),
   brand: async () => brandState(await import("simple-icons")),
 };
 
@@ -160,7 +143,7 @@ export function getIconGlyph(id: IconLibraryId, name: string): IconGlyph | undef
   return states.get(id)?.get(name);
 }
 
-/** Search keywords beyond the icon name (lucide tags, tabler tags, brand titles). */
+/** Search keywords beyond the icon name (lucide tags, brand titles). */
 export function getIconTerms(id: IconLibraryId, name: string): readonly string[] {
   return states.get(id)?.terms(name) ?? [];
 }
