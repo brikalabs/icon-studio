@@ -1,4 +1,5 @@
 # Icon Studio
+<img width="1350" height="912" alt="image" src="https://github.com/user-attachments/assets/427666a8-245b-4cf5-b758-efe7d23ddfc7" />
 
 **Live at [icon.brika.dev](https://icon.brika.dev)**
 
