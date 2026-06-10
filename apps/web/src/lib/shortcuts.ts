@@ -1,6 +1,6 @@
 import { iconLibraries } from "@brika/icon-studio-core";
 import { previewMaskSchema, useEditorStore } from "../state/editor-store";
-import { copySvg, exportSvg } from "./spec-actions";
+import { copyShareLink, copySvg, exportSvg, randomizeSpec, startFresh } from "./spec-actions";
 
 /**
  * Single source of truth for keyboard shortcuts. One entry = binding,
@@ -68,6 +68,21 @@ export const SHORTCUTS = defineShortcuts({
     description: "Copy SVG markup",
     combo: "mod+shift+c",
     run: () => void copySvg(),
+  },
+  copyLink: {
+    description: "Copy share link",
+    combo: "mod+shift+l",
+    run: () => void copyShareLink(),
+  },
+  randomize: {
+    description: "Randomize everything",
+    combo: "r",
+    run: randomizeSpec,
+  },
+  startFresh: {
+    description: "Start fresh",
+    combo: "n",
+    run: startFresh,
   },
   focusSearch: {
     description: "Focus icon search",

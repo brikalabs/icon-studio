@@ -101,7 +101,10 @@ export function Header() {
                 <Dices />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Randomize everything</TooltipContent>
+            <TooltipContent className="flex items-center gap-1.5">
+              Randomize everything
+              <ShortcutKeys of="randomize" />
+            </TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -109,7 +112,10 @@ export function Header() {
                 <FilePlus2 />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Start fresh</TooltipContent>
+            <TooltipContent className="flex items-center gap-1.5">
+              Start fresh
+              <ShortcutKeys of="startFresh" />
+            </TooltipContent>
           </Tooltip>
         </div>
       </div>
@@ -174,6 +180,9 @@ export function Header() {
               <DropdownMenuItem onSelect={() => void copyShareLink()}>
                 <Link />
                 Copy share link
+                <DropdownMenuShortcut>
+                  <ShortcutKeys of="copyLink" />
+                </DropdownMenuShortcut>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

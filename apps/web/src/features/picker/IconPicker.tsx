@@ -1,6 +1,7 @@
 import { Button } from "@brika/clay/components/button";
 import { ButtonGroup } from "@brika/clay/components/button-group";
 import { Input } from "@brika/clay/components/input";
+import { Kbd } from "@brika/clay/components/kbd";
 import {
   Select,
   SelectContent,
@@ -166,12 +167,17 @@ export function IconPicker() {
         <ButtonGroup>
           <Select value={library} onValueChange={switchLibrary}>
             <SelectTrigger className="w-fit shrink-0 font-medium text-xs" aria-label="Icon library">
-              <SelectValue />
+              <SelectValue>
+                {iconLibraries.find((entry) => entry.id === library)?.label}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {iconLibraries.map((entry) => (
+              {iconLibraries.map((entry, index) => (
                 <SelectItem key={entry.id} value={entry.id}>
-                  {entry.label}
+                  <span className="flex w-full items-center justify-between gap-3">
+                    {entry.label}
+                    <Kbd>{index + 1}</Kbd>
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>

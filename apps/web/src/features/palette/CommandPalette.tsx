@@ -14,6 +14,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@brika/clay/components/dialog";
+import { Kbd } from "@brika/clay/components/kbd";
 import {
   backgroundPresets,
   ensureIconifyIcons,
@@ -129,7 +130,14 @@ export function CommandPalette() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="overflow-hidden p-0 sm:max-w-lg" showCloseButton={false}>
+      {/* p-safe is not a twMerge-known padding class, so it must be beaten
+          with an inline style; the dialog chrome goes transparent so the
+          Command surface is the single visible panel (no double frame). */}
+      <DialogContent
+        className="overflow-hidden border-0 bg-transparent shadow-none backdrop-blur-none sm:max-w-lg"
+        style={{ padding: 0 }}
+        showCloseButton={false}
+      >
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <DialogDescription className="sr-only">
           Search icons, presets, and commands
@@ -203,6 +211,9 @@ export function CommandPalette() {
               <CommandItem onSelect={() => run(() => void copyShareLink())}>
                 <Link />
                 Copy share link
+                <CommandShortcut>
+                  <ShortcutKeys of="copyLink" />
+                </CommandShortcut>
               </CommandItem>
               <CommandItem
                 onSelect={() => run(randomizeSpec)}
@@ -210,6 +221,9 @@ export function CommandPalette() {
               >
                 <Dices />
                 Randomize everything
+                <CommandShortcut>
+                  <ShortcutKeys of="randomize" />
+                </CommandShortcut>
               </CommandItem>
               <CommandItem
                 onSelect={() => run(startFresh)}
@@ -217,6 +231,9 @@ export function CommandPalette() {
               >
                 <FilePlus2 />
                 Start fresh
+                <CommandShortcut>
+                  <ShortcutKeys of="startFresh" />
+                </CommandShortcut>
               </CommandItem>
               <CommandItem onSelect={() => run(undo)}>
                 <Undo2 />
@@ -243,7 +260,7 @@ export function CommandPalette() {
             </CommandGroup>
 
             <CommandGroup heading="Browse">
-              {iconLibraries.map((library) => (
+              {iconLibraries.map((library, index) => (
                 <CommandItem
                   key={`browse-${library.id}`}
                   value={`browse ${library.label} library`}
@@ -256,6 +273,9 @@ export function CommandPalette() {
                 >
                   <LibraryBig />
                   Browse {library.label === "All" ? "all icons" : `${library.label} icons`}
+                  <CommandShortcut>
+                    <Kbd>{index + 1}</Kbd>
+                  </CommandShortcut>
                 </CommandItem>
               ))}
             </CommandGroup>
