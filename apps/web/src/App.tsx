@@ -105,7 +105,7 @@ export function App() {
     <div className="flex h-screen flex-col">
       <Header />
       <main className="flex min-h-0 flex-1">
-        <aside className="hidden w-64 shrink-0 border-r md:block xl:w-72">
+        <aside className="hidden w-64 shrink-0 border-r bg-card md:block xl:w-72">
           <IconPicker />
         </aside>
         <section className="relative min-w-0 flex-1 bg-muted/20">
@@ -146,7 +146,7 @@ export function App() {
             </Sheet>
           </div>
         </section>
-        <aside className="hidden w-72 shrink-0 border-l lg:block xl:w-80">
+        <aside className="hidden w-72 shrink-0 border-l bg-card lg:block xl:w-80">
           <ControlsPanel />
         </aside>
       </main>
