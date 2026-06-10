@@ -52,6 +52,9 @@ function alignOffset(spec: IconSpec, position: number): number {
   return Math.round(position * margin);
 }
 
+const ROW_LABEL = "text-muted-foreground text-xs font-medium uppercase tracking-wide";
+const ROW = "flex items-center justify-between gap-3";
+
 export function IconControls() {
   const spec = useEditorStore((state) => state.spec);
   const updateSpec = useEditorStore((state) => state.updateSpec);
@@ -60,8 +63,8 @@ export function IconControls() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-muted-foreground">Canvas</span>
+      <div className={ROW}>
+        <span className={ROW_LABEL}>Canvas</span>
         <Select
           value={String(spec.canvasSize)}
           onValueChange={(value) => {
@@ -69,7 +72,7 @@ export function IconControls() {
             updateSpec({ canvasSize: Number(value), offsetX: 0, offsetY: 0 });
           }}
         >
-          <SelectTrigger size="sm" className="w-32" aria-label="Canvas size">
+          <SelectTrigger size="sm" className="w-28" aria-label="Canvas size">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -93,8 +96,8 @@ export function IconControls() {
 
       {spec.icon.type === "text" ? (
         <>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-muted-foreground text-sm">Font</span>
+          <div className={ROW}>
+            <span className={ROW_LABEL}>Font</span>
             <Select
               value={spec.icon.fontFamily}
               onValueChange={(value) => {
@@ -105,7 +108,7 @@ export function IconControls() {
                 }
               }}
             >
-              <SelectTrigger size="sm" className="w-32" aria-label="Monogram font family">
+              <SelectTrigger size="sm" className="w-28" aria-label="Monogram font family">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -117,8 +120,8 @@ export function IconControls() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-muted-foreground text-sm">Weight</span>
+          <div className={ROW}>
+            <span className={ROW_LABEL}>Weight</span>
             <Select
               value={spec.icon.fontWeight}
               onValueChange={(value) => {
@@ -129,7 +132,7 @@ export function IconControls() {
                 }
               }}
             >
-              <SelectTrigger size="sm" className="w-32" aria-label="Monogram font weight">
+              <SelectTrigger size="sm" className="w-28" aria-label="Monogram font weight">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -144,9 +147,9 @@ export function IconControls() {
         </>
       ) : null}
 
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-muted-foreground">Align</span>
-        <div className="flex gap-1">
+      <div className={ROW}>
+        <span className={ROW_LABEL}>Align</span>
+        <div className="flex gap-0.5">
           {ALIGN_ACTIONS.map((action) => (
             <Button
               key={action.id}
@@ -200,8 +203,8 @@ export function IconControls() {
         />
       ) : null}
 
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-muted-foreground text-sm">Position</span>
+      <div className={ROW}>
+        <span className={ROW_LABEL}>Position</span>
         <div className="flex items-center gap-1">
           <SliderValue
             value={spec.offsetX}

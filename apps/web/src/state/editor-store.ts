@@ -49,6 +49,9 @@ interface EditorState {
   /** Mask applied to the preview only, to verify circle/squircle/radius crops. */
   previewMask: PreviewMask;
   setPreviewMask: (mask: PreviewMask) => void;
+  /** Preview zoom factor; 1 fits the canvas to the available space. */
+  zoom: number;
+  setZoom: (zoom: number) => void;
   undo: () => void;
   redo: () => void;
 }
@@ -104,6 +107,8 @@ export const useEditorStore = create<EditorState>((set) => ({
   setPickerLibrary: (library) => set({ pickerLibrary: library }),
   previewMask: "square",
   setPreviewMask: (mask) => set({ previewMask: mask }),
+  zoom: 1,
+  setZoom: (zoom) => set({ zoom }),
   undo: () =>
     set((state) => {
       const previous = state.past.at(-1);

@@ -12,7 +12,7 @@ export function PresetGrid() {
   )?.id;
 
   return (
-    <div className="grid grid-cols-8 gap-2">
+    <div className="grid grid-cols-8 gap-1.5">
       {backgroundPresets.map((preset) => (
         <button
           key={preset.id}
@@ -25,8 +25,10 @@ export function PresetGrid() {
             updateSpec({ background: preset.background });
           }}
           className={cn(
-            "aspect-square rounded-md border border-border/50 transition-transform hover:scale-110",
-            preset.id === activeId && "ring-2 ring-ring ring-offset-2 ring-offset-background",
+            "aspect-square rounded-md transition-all duration-150",
+            preset.id === activeId
+              ? "ring-2 ring-ring ring-offset-2 ring-offset-background scale-105"
+              : "opacity-80 hover:opacity-100 hover:scale-110 hover:shadow-sm",
           )}
           style={{ background: backgroundToCss(preset.background) }}
         />

@@ -35,82 +35,92 @@ export function Header() {
   const setPaletteOpen = useEditorStore((state) => state.setPaletteOpen);
 
   return (
-    <header className="grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 border-b px-4">
-      <div className="flex items-center gap-3">
+    <header className="grid h-12 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b bg-card px-3">
+      {/* Left cluster: logo + history + utilities, visually grouped */}
+      <div className="flex items-center gap-1">
         <a
           href="https://brika.dev"
-          className="flex items-center gap-2 font-semibold"
+          className="flex items-center gap-1.5 rounded-md px-2 py-1 font-semibold text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
           aria-label="Brika home"
         >
-          <BrikaLogo className="size-5" />
-          Icon Studio
+          <BrikaLogo className="size-4" />
+          <span className="hidden lg:inline">Icon Studio</span>
         </a>
-        <Separator orientation="vertical" className="h-5" />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={undo}
-              disabled={!canUndo}
-              aria-label="Undo"
-            >
-              <Undo2 />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            Undo{" "}
-            <KbdGroup>
-              <Kbd>⌘</Kbd>
-              <Kbd>Z</Kbd>
-            </KbdGroup>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={redo}
-              disabled={!canRedo}
-              aria-label="Redo"
-            >
-              <Redo2 />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            Redo{" "}
-            <KbdGroup>
-              <Kbd>⇧</Kbd>
-              <Kbd>⌘</Kbd>
-              <Kbd>Z</Kbd>
-            </KbdGroup>
-          </TooltipContent>
-        </Tooltip>
-        <Separator orientation="vertical" className="h-5" />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={randomizeSpec}
-              aria-label="Randomize everything"
-            >
-              <Dices />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Randomize everything</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon-sm" onClick={startFresh} aria-label="Start fresh">
-              <FilePlus2 />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Start fresh</TooltipContent>
-        </Tooltip>
+
+        <Separator orientation="vertical" className="mx-1 h-4" />
+
+        <div className="flex items-center gap-0.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={undo}
+                disabled={!canUndo}
+                aria-label="Undo"
+              >
+                <Undo2 />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Undo{" "}
+              <KbdGroup>
+                <Kbd>⌘</Kbd>
+                <Kbd>Z</Kbd>
+              </KbdGroup>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={redo}
+                disabled={!canRedo}
+                aria-label="Redo"
+              >
+                <Redo2 />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Redo{" "}
+              <KbdGroup>
+                <Kbd>⇧</Kbd>
+                <Kbd>⌘</Kbd>
+                <Kbd>Z</Kbd>
+              </KbdGroup>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        <Separator orientation="vertical" className="mx-1 h-4" />
+
+        <div className="flex items-center gap-0.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={randomizeSpec}
+                aria-label="Randomize everything"
+              >
+                <Dices />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Randomize everything</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-sm" onClick={startFresh} aria-label="Start fresh">
+                <FilePlus2 />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Start fresh</TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
+      {/* Center: file name */}
       <Input
         value={fileName}
         onChange={(event) => setFileName(event.target.value)}
@@ -119,32 +129,33 @@ export function Header() {
             setFileName(null);
           }
         }}
-        className="w-56 text-center font-mono text-xs"
+        className="w-36 text-center font-mono text-xs sm:w-52"
         aria-label="Export file name"
       />
 
-      <div className="flex items-center justify-end gap-2">
+      {/* Right cluster: about + search + export */}
+      <div className="flex items-center justify-end gap-1.5">
         <AboutDialog />
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}
           aria-label="Open command palette"
-          className="flex h-8 items-center gap-2 rounded-md border bg-card px-2.5 text-muted-foreground text-sm transition-colors hover:border-ring hover:text-foreground"
+          className="flex h-7 items-center gap-2 rounded-md border bg-background px-2 text-muted-foreground text-xs transition-colors hover:border-ring hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
         >
-          <Search className="size-3.5" />
+          <Search className="size-3" />
           <span className="hidden xl:inline">Search...</span>
           <Kbd>⌘K</Kbd>
         </button>
         <div className="flex items-center">
-          <Button onClick={exportSvg} className="rounded-r-none">
+          <Button onClick={exportSvg} size="sm" className="rounded-r-none">
             <Download />
-            Export SVG
+            <span className="hidden sm:inline">Export</span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                size="icon"
-                className="rounded-l-none border-l border-primary-foreground/20"
+                size="sm"
+                className="rounded-l-none border-l border-primary-foreground/20 px-2"
                 aria-label="More export options"
               >
                 <ChevronDown />

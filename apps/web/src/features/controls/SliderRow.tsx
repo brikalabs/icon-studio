@@ -14,9 +14,11 @@ interface SliderRowProps {
 /** Labeled slider with a numeric readout, the standard control-panel row. */
 export function SliderRow({ label, ...slider }: Readonly<SliderRowProps>) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          {label}
+        </span>
         <SliderValue width="w-14" {...slider} />
       </div>
       <Slider

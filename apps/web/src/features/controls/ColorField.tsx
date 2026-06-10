@@ -27,10 +27,10 @@ export function ColorSwatchButton({
   return (
     <Popover>
       <PopoverTrigger
-        className="flex items-center gap-2 rounded-md border bg-card px-2 py-1 font-mono text-xs hover:border-ring"
+        className="flex items-center gap-2 rounded-md border bg-card px-2 py-1 font-mono text-xs transition-colors hover:border-ring focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
         aria-label={`${label} color`}
       >
-        <ColorPickerSwatch value={value} className="size-4 rounded-sm" />
+        <ColorPickerSwatch value={value} className="size-3.5 rounded-sm" />
         {swatchOnly ? null : value.toUpperCase()}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="end">
@@ -56,7 +56,9 @@ interface ColorFieldProps {
 export function ColorField({ label, value, onChange }: Readonly<ColorFieldProps>) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+        {label}
+      </span>
       <ColorSwatchButton label={label} value={value} onChange={onChange} />
     </div>
   );

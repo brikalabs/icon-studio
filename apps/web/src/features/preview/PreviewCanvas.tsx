@@ -1,3 +1,10 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@brika/clay/components/select";
 import { ToggleGroup, ToggleGroupItem } from "@brika/clay/components/toggle-group";
 import {
   buildIconSvg,
@@ -6,14 +13,17 @@ import {
   isIconLibraryReady,
 } from "@brika/icon-studio-core";
 import { Circle, Square, SquareRoundCorner, Squircle } from "lucide-react";
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { svgToDataUri } from "../../lib/svg-io";
 import { type PreviewMask, previewMaskSchema, useEditorStore } from "../../state/editor-store";
 import { SelectionOverlay } from "./SelectionOverlay";
 
-const DISPLAY_SIZE = 480;
+const MAX_FIT_SIZE = 480;
+const MIN_FIT_SIZE = 220;
 /** Drag snaps to the canvas center inside this many display pixels. */
 const SNAP_DISTANCE = 6;
+
+const ZOOM_OPTIONS: readonly number[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 /** Superellipse |x|^n + |y|^n = 1 sampled as a percentage polygon (iOS-style squircle at n=5). */
 function superellipseClip(exponent: number, samples: number): string {
@@ -69,8 +79,32 @@ export function PreviewCanvas() {
   const catalogueVersion = useEditorStore((state) => state.catalogueVersion);
   const previewMask = useEditorStore((state) => state.previewMask);
   const setPreviewMask = useEditorStore((state) => state.setPreviewMask);
+  const zoom = useEditorStore((state) => state.zoom);
+  const setZoom = useEditorStore((state) => state.setZoom);
   const dragRef = useRef<DragState | null>(null);
   const [snapped, setSnapped] = useState<SnappedAxes>({ x: false, y: false });
+
+  // The canvas fits the available space at 100%; zoom scales from there
+  // (the scroll container takes over when it no longer fits).
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [fitSize, setFitSize] = useState(MAX_FIT_SIZE);
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) {
+      return;
+    }
+    const observer = new ResizeObserver((entries) => {
+      const box = entries[0]?.contentRect;
+      if (box) {
+        setFitSize(
+          Math.max(MIN_FIT_SIZE, Math.min(MAX_FIT_SIZE, box.width - 64, box.height - 128)),
+        );
+      }
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const displaySize = Math.round(fitSize * zoom);
 
   const waitingForLibrary =
     spec.icon.type !== "custom" &&
@@ -91,7 +125,7 @@ export function PreviewCanvas() {
     }
   }, [spec, waitingForLibrary, catalogueVersion]);
 
-  const scaleToCanvas = spec.canvasSize / DISPLAY_SIZE;
+  const scaleToCanvas = spec.canvasSize / displaySize;
   const snapThreshold = SNAP_DISTANCE * scaleToCanvas;
 
   const snapOffset = (value: number): number => (Math.abs(value) < snapThreshold ? 0 : value);
@@ -149,97 +183,146 @@ export function PreviewCanvas() {
   };
 
   return (
-    <div
-      className="flex h-full flex-col items-center justify-center gap-3 p-8"
-      onPointerDown={(event) => {
-        if (event.target === event.currentTarget) {
-          setSelected(false);
-        }
-      }}
-    >
+    <div className="preview-stage relative h-full">
       <div
-        role="application"
-        aria-label="Icon preview. Click to select, drag or use arrow keys to move the icon, Escape to deselect."
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: this is a 2D drag surface with pointer and arrow-key handlers; it must be focusable for the keyboard interaction
-        tabIndex={0}
-        className="checkerboard relative cursor-move touch-none select-none rounded-xl outline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
-        style={{ width: DISPLAY_SIZE, height: DISPLAY_SIZE }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerEnd}
-        onPointerCancel={onPointerEnd}
-        onKeyDown={onKeyDown}
-        onDoubleClick={() => {
-          markUndoBoundary();
-          updateSpec({ offsetX: 0, offsetY: 0 });
+        ref={scrollRef}
+        className="h-full overflow-auto"
+        onPointerDown={(event) => {
+          if (event.target === event.currentTarget) {
+            setSelected(false);
+          }
         }}
       >
-        {rendered.uri ? (
-          <>
-            {previewMask !== "square" ? (
-              // Ghost of the full square, so the cropped area stays visible.
-              <img
-                src={rendered.uri}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                className="absolute inset-0 h-full w-full opacity-20"
-              />
-            ) : null}
-            <img
-              src={rendered.uri}
-              alt="Generated icon preview"
-              draggable={false}
-              className="relative h-full w-full"
-              style={MASK_STYLES[previewMask]}
-            />
-            {snapped.x ? (
-              <div className="-translate-x-1/2 pointer-events-none absolute inset-y-0 left-1/2 w-px bg-primary/80" />
-            ) : null}
-            {snapped.y ? (
-              <div className="-translate-y-1/2 pointer-events-none absolute inset-x-0 top-1/2 h-px bg-primary/80" />
-            ) : null}
-            {selected ? <SelectionOverlay displaySize={DISPLAY_SIZE} /> : null}
-          </>
-        ) : (
+        <div
+          className="flex min-h-full w-max min-w-full flex-col items-center justify-center gap-4 p-8"
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSelected(false);
+            }
+          }}
+        >
           <div
-            className={`flex h-full items-center justify-center p-8 text-center text-sm ${
-              waitingForLibrary ? "text-muted-foreground" : "text-destructive"
+            role="application"
+            aria-label="Icon preview. Click to select, drag or use arrow keys to move the icon, Escape to deselect."
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: this is a 2D drag surface with pointer and arrow-key handlers; it must be focusable for the keyboard interaction
+            tabIndex={0}
+            className="checkerboard preview-canvas-shadow relative cursor-move touch-none select-none rounded-xl outline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
+            style={{ width: displaySize, height: displaySize }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerEnd}
+            onPointerCancel={onPointerEnd}
+            onKeyDown={onKeyDown}
+            onDoubleClick={() => {
+              markUndoBoundary();
+              updateSpec({ offsetX: 0, offsetY: 0 });
+            }}
+          >
+            {rendered.uri ? (
+              <>
+                {previewMask !== "square" ? (
+                  // Ghost of the full square, so the cropped area stays visible.
+                  <img
+                    src={rendered.uri}
+                    alt=""
+                    aria-hidden="true"
+                    draggable={false}
+                    className="absolute inset-0 h-full w-full opacity-20"
+                  />
+                ) : null}
+                <img
+                  src={rendered.uri}
+                  alt="Generated icon preview"
+                  draggable={false}
+                  className="relative h-full w-full"
+                  style={MASK_STYLES[previewMask]}
+                />
+                {snapped.x ? (
+                  <div className="-translate-x-1/2 pointer-events-none absolute inset-y-0 left-1/2 w-px bg-primary/80" />
+                ) : null}
+                {snapped.y ? (
+                  <div className="-translate-y-1/2 pointer-events-none absolute inset-x-0 top-1/2 h-px bg-primary/80" />
+                ) : null}
+                {selected ? <SelectionOverlay displaySize={displaySize} /> : null}
+              </>
+            ) : (
+              <div
+                className={`flex h-full items-center justify-center p-8 text-center text-sm ${
+                  waitingForLibrary ? "text-muted-foreground" : "text-destructive"
+                }`}
+              >
+                {rendered.error}
+              </div>
+            )}
+          </div>
+
+          {/* Toolbar: mask selector + size readout + zoom, treated as one family */}
+          <div className="flex items-center gap-2 rounded-lg border bg-card/80 px-3 py-1.5 shadow-sm backdrop-blur-sm">
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              value={previewMask}
+              onValueChange={(value) => {
+                const parsed = previewMaskSchema.safeParse(value);
+                setPreviewMask(parsed.success ? parsed.data : "square");
+              }}
+              aria-label="Preview mask shape"
+            >
+              {MASK_OPTIONS.map((option) => (
+                <ToggleGroupItem
+                  key={option.id}
+                  value={option.id}
+                  aria-label={`${option.label} preview`}
+                  title={option.label}
+                >
+                  <option.icon />
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+
+            <div className="h-4 w-px bg-border" aria-hidden="true" />
+
+            <span className="font-mono text-muted-foreground text-xs">{spec.canvasSize} px</span>
+
+            <div className="h-4 w-px bg-border" aria-hidden="true" />
+
+            <Select
+              value={String(zoom)}
+              onValueChange={(value) => {
+                const next = Number(value);
+                if (ZOOM_OPTIONS.includes(next)) {
+                  setZoom(next);
+                }
+              }}
+            >
+              <SelectTrigger
+                size="sm"
+                className="w-20 border-0 bg-transparent shadow-none"
+                aria-label="Preview zoom"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ZOOM_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={String(option)}>
+                    {Math.round(option * 100)}%
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Reserved line: appearing text must not shift the toolbar above. */}
+          <span
+            aria-hidden={previewMask === "square"}
+            className={`h-4 text-muted-foreground/70 text-xs transition-opacity ${
+              previewMask === "square" ? "opacity-0" : "opacity-100"
             }`}
           >
-            {rendered.error}
-          </div>
-        )}
-      </div>
-      <div className="flex items-center gap-3">
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          value={previewMask}
-          onValueChange={(value) => {
-            const parsed = previewMaskSchema.safeParse(value);
-            setPreviewMask(parsed.success ? parsed.data : "square");
-          }}
-          aria-label="Preview mask shape"
-        >
-          {MASK_OPTIONS.map((option) => (
-            <ToggleGroupItem
-              key={option.id}
-              value={option.id}
-              aria-label={`${option.label} preview`}
-              title={option.label}
-            >
-              <option.icon />
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-        <span className="font-mono text-muted-foreground text-xs">
-          {spec.canvasSize} × {spec.canvasSize}
-        </span>
-        {previewMask !== "square" ? (
-          <span className="text-muted-foreground text-xs">mask is preview only</span>
-        ) : null}
+            Mask is preview only, exports stay square
+          </span>
+        </div>
       </div>
     </div>
   );

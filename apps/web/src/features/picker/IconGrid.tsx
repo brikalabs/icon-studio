@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import { IconGlyph } from "../../components/IconGlyph";
 
 const COLUMNS = 4;
-const ROW_HEIGHT = 64;
+const ROW_HEIGHT = 60;
 
 interface IconGridProps {
   readonly library: IconLibraryId;
@@ -53,13 +53,13 @@ export function IconGrid({
   return (
     <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
       {names.length === 0 ? (
-        <p className="px-1 py-8 text-center text-sm text-muted-foreground">{emptyMessage}</p>
+        <p className="px-1 py-8 text-center text-muted-foreground text-sm">{emptyMessage}</p>
       ) : (
         <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
           {virtualRows.map((row) => (
             <div
               key={row.key}
-              className="absolute inset-x-0 grid grid-cols-4 gap-2"
+              className="absolute inset-x-0 grid grid-cols-4 gap-1.5"
               style={{ top: 0, height: row.size, transform: `translateY(${row.start}px)` }}
             >
               {names.slice(row.index * COLUMNS, row.index * COLUMNS + COLUMNS).map((name) => (
@@ -71,10 +71,10 @@ export function IconGrid({
                   aria-label={name}
                   aria-pressed={name === selectedName}
                   className={cn(
-                    "flex items-center justify-center rounded-lg border text-foreground/80 transition-colors",
+                    "flex items-center justify-center rounded-lg transition-all duration-100 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-1",
                     name === selectedName
-                      ? "border-primary bg-primary/10 text-foreground"
-                      : "border-transparent bg-card hover:border-border hover:text-foreground",
+                      ? "bg-primary/15 text-primary ring-1 ring-primary/30"
+                      : "text-foreground/70 hover:bg-accent hover:text-foreground",
                   )}
                 >
                   <IconGlyph library={library} name={name} />

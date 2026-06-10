@@ -43,3 +43,21 @@
     8px -8px,
     -8px 0;
 }
+
+/* Dot-grid stage: gives the preview area a subtle design-tool feel. */
+.preview-stage {
+  background-color: var(--color-muted, hsl(0 0% 10%));
+  background-image: radial-gradient(
+    circle,
+    color-mix(in oklch, var(--color-border) 60%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 20px 20px;
+}
+
+/* Subtle layered shadow that lifts the canvas off the stage. */
+.preview-canvas-shadow {
+  box-shadow:
+    0 2px 8px 0 rgb(0 0 0 / 0.3),
+    0 8px 32px 0 rgb(0 0 0 / 0.2);
+}

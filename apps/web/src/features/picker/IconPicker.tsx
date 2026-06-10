@@ -153,7 +153,7 @@ export function IconPicker() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-col gap-2 p-3">
+      <div className="flex flex-col gap-2 p-3 pb-2">
         <ToggleGroup
           type="single"
           variant="outline"
@@ -164,15 +164,15 @@ export function IconPicker() {
           aria-label="Icon library"
         >
           {iconLibraries.map((entry) => (
-            <ToggleGroupItem key={entry.id} value={entry.id} className="flex-1">
+            <ToggleGroupItem key={entry.id} value={entry.id} className="flex-1 text-xs">
               {entry.label}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-        <div className="flex items-center gap-2">
-          <InputGroup>
+        <div className="flex items-center gap-1.5">
+          <InputGroup className="flex-1">
             <InputGroupAddon align="inline-start">
-              <Search className="size-4 text-muted-foreground" />
+              <Search className="size-3.5 text-muted-foreground" />
             </InputGroupAddon>
             <InputGroupInput
               type="search"
@@ -184,12 +184,12 @@ export function IconPicker() {
           </InputGroup>
           <Button
             variant="outline"
-            size="icon"
+            size="icon-sm"
             onClick={pickRandom}
             aria-label="Pick a random icon"
             title="Random icon"
           >
-            <Shuffle />
+            <Shuffle className="size-3.5" />
           </Button>
         </div>
         {collection ? (
@@ -199,11 +199,11 @@ export function IconPicker() {
               setCollection(null);
               setQuery("");
             }}
-            className="flex items-center gap-1.5 text-muted-foreground text-sm transition-colors hover:text-foreground"
+            className="flex items-center gap-1.5 rounded-md px-1 py-0.5 text-muted-foreground text-xs transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-1"
           >
-            <ArrowLeft className="size-4" />
-            <span className="truncate">{collection.name}</span>
-            <span className="ml-auto shrink-0 text-xs">
+            <ArrowLeft className="size-3.5 shrink-0" />
+            <span className="truncate font-medium">{collection.name}</span>
+            <span className="ml-auto shrink-0 tabular-nums">
               {collection.total.toLocaleString("en")} icons
             </span>
           </button>
@@ -223,7 +223,7 @@ export function IconPicker() {
         />
       )}
 
-      <div className="flex flex-col gap-2 border-t p-3">
+      <div className="flex flex-col gap-1.5 border-t p-3">
         <TextIconInput />
         <CustomSvgDropzone />
       </div>
