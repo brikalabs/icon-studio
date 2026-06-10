@@ -12,7 +12,7 @@ import {
   suggestFileName,
 } from "@brika/icon-studio-core";
 import { useEditorStore } from "../state/editor-store";
-import { copyToClipboard, downloadSvg } from "./svg-io";
+import { copyPngToClipboard, copyToClipboard, downloadPng, downloadSvg } from "./svg-io";
 
 function renderCurrentSvg(): string | null {
   try {
@@ -23,13 +23,32 @@ function renderCurrentSvg(): string | null {
   }
 }
 
+/** The base file name (no extension) the user typed, or one derived from the icon. */
+export function currentBaseName(): string {
+  const { spec, fileName } = useEditorStore.getState();
+  return (fileName ?? suggestFileName(spec)).replace(/\.svg$/i, "");
+}
+
 export function exportSvg(): void {
   const svg = renderCurrentSvg();
   if (svg) {
-    const { spec, fileName } = useEditorStore.getState();
-    const name = fileName ?? suggestFileName(spec);
+    const name = `${currentBaseName()}.svg`;
     downloadSvg(svg, name);
     toast.success(`Exported ${name}`);
+  }
+}
+
+export async function exportPng(): Promise<void> {
+  const svg = renderCurrentSvg();
+  if (!svg) {
+    return;
+  }
+  const name = `${currentBaseName()}.png`;
+  try {
+    await downloadPng(svg, useEditorStore.getState().spec.canvasSize, name);
+    toast.success(`Exported ${name}`);
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Could not export PNG");
   }
 }
 
@@ -38,6 +57,19 @@ export async function copySvg(): Promise<void> {
   if (svg) {
     await copyToClipboard(svg);
     toast.success("SVG copied to clipboard");
+  }
+}
+
+export async function copyPng(): Promise<void> {
+  const svg = renderCurrentSvg();
+  if (!svg) {
+    return;
+  }
+  try {
+    await copyPngToClipboard(svg, useEditorStore.getState().spec.canvasSize);
+    toast.success("PNG copied to clipboard");
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Could not copy PNG");
   }
 }
 

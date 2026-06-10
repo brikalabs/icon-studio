@@ -29,7 +29,9 @@ import {
   Crosshair,
   Dices,
   Download,
+  FileImage,
   FilePlus2,
+  ImageDown,
   LibraryBig,
   Link,
   Redo2,
@@ -40,8 +42,10 @@ import { IconGlyph } from "../../components/IconGlyph";
 import { ShortcutKeys } from "../../components/ShortcutKeys";
 import { backgroundToCss } from "../../lib/gradient-css";
 import {
+  copyPng,
   copyShareLink,
   copySvg,
+  exportPng,
   exportSvg,
   randomizeSpec,
   startFresh,
@@ -201,6 +205,10 @@ export function CommandPalette() {
                   <ShortcutKeys of="exportSvg" />
                 </CommandShortcut>
               </CommandItem>
+              <CommandItem onSelect={() => run(() => void exportPng())} value="export png image">
+                <FileImage />
+                Export PNG
+              </CommandItem>
               <CommandItem onSelect={() => run(() => void copySvg())}>
                 <Copy />
                 Copy SVG
@@ -208,12 +216,13 @@ export function CommandPalette() {
                   <ShortcutKeys of="copySvg" />
                 </CommandShortcut>
               </CommandItem>
+              <CommandItem onSelect={() => run(() => void copyPng())} value="copy png image">
+                <ImageDown />
+                Copy PNG
+              </CommandItem>
               <CommandItem onSelect={() => run(() => void copyShareLink())}>
                 <Link />
                 Copy share link
-                <CommandShortcut>
-                  <ShortcutKeys of="copyLink" />
-                </CommandShortcut>
               </CommandItem>
               <CommandItem
                 onSelect={() => run(randomizeSpec)}
@@ -221,9 +230,6 @@ export function CommandPalette() {
               >
                 <Dices />
                 Randomize everything
-                <CommandShortcut>
-                  <ShortcutKeys of="randomize" />
-                </CommandShortcut>
               </CommandItem>
               <CommandItem
                 onSelect={() => run(startFresh)}
@@ -231,9 +237,6 @@ export function CommandPalette() {
               >
                 <FilePlus2 />
                 Start fresh
-                <CommandShortcut>
-                  <ShortcutKeys of="startFresh" />
-                </CommandShortcut>
               </CommandItem>
               <CommandItem onSelect={() => run(undo)}>
                 <Undo2 />

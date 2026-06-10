@@ -1,6 +1,6 @@
 import { iconLibraries } from "@brika/icon-studio-core";
 import { previewMaskSchema, useEditorStore } from "../state/editor-store";
-import { copyShareLink, copySvg, exportSvg, randomizeSpec, startFresh } from "./spec-actions";
+import { copySvg, exportSvg } from "./spec-actions";
 
 /**
  * Single source of truth for keyboard shortcuts. One entry = binding,
@@ -65,24 +65,9 @@ export const SHORTCUTS = defineShortcuts({
     run: exportSvg,
   },
   copySvg: {
-    description: "Copy SVG markup",
+    description: "Copy SVG",
     combo: "mod+shift+c",
     run: () => void copySvg(),
-  },
-  copyLink: {
-    description: "Copy share link",
-    combo: "mod+shift+l",
-    run: () => void copyShareLink(),
-  },
-  randomize: {
-    description: "Randomize everything",
-    combo: "r",
-    run: randomizeSpec,
-  },
-  startFresh: {
-    description: "Start fresh",
-    combo: "n",
-    run: startFresh,
   },
   focusSearch: {
     description: "Focus icon search",
@@ -159,25 +144,41 @@ function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
-const MATCHERS = Object.values(SHORTCUTS).map((def) => ({
+const MATCHERS = (Object.entries(SHORTCUTS) as [ShortcutId, ShortcutConfig][]).map(([id, def]) => ({
+  id,
   def,
   combos: [def.combo, ...(def.aliases ?? [])].map(parseCombo),
 }));
 
-/** Installs the global handler; returns the teardown for useEffect. */
+/** Pure matcher used by the handler and by tests: which shortcut, if any, an event triggers. */
+export function resolveShortcutId(event: KeyboardEvent): ShortcutId | null {
+  for (const { id, combos } of MATCHERS) {
+    if (combos.some((combo) => comboMatches(combo, event))) {
+      return id;
+    }
+  }
+  return null;
+}
+
+/**
+ * Installs the global handler; returns the teardown for useEffect. Capture
+ * phase so a registry shortcut (e.g. ⌘K to close the palette) fires even when
+ * a focused widget like the command list would otherwise consume the event.
+ */
 export function installShortcuts(): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
     const editable = isEditableTarget(event.target);
 
-    for (const { def, combos } of MATCHERS) {
-      if (combos.some((combo) => comboMatches(combo, event))) {
-        if (editable && def.worksInInputs !== true) {
-          return;
-        }
-        event.preventDefault();
-        def.run();
+    const matched = MATCHERS.find(({ combos }) =>
+      combos.some((combo) => comboMatches(combo, event)),
+    );
+    if (matched) {
+      if (editable && matched.def.worksInInputs !== true) {
         return;
       }
+      event.preventDefault();
+      matched.def.run();
+      return;
     }
 
     if (editable || event.metaKey || event.ctrlKey) {
@@ -191,8 +192,8 @@ export function installShortcuts(): () => void {
       void store.loadLibrary(library.id);
     }
   };
-  window.addEventListener("keydown", onKeyDown);
-  return () => window.removeEventListener("keydown", onKeyDown);
+  window.addEventListener("keydown", onKeyDown, { capture: true });
+  return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
 }
 
 export interface ShortcutEntry {

@@ -4,10 +4,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@brika/clay/components/dropdown-menu";
-import { Input } from "@brika/clay/components/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@brika/clay/components/input-group";
 import { Separator } from "@brika/clay/components/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@brika/clay/components/tooltip";
 import {
@@ -15,15 +16,26 @@ import {
   Copy,
   Dices,
   Download,
+  FileImage,
   FilePlus2,
+  ImageDown,
   Link,
   Redo2,
   Search,
   Undo2,
 } from "lucide-react";
 import { AboutDialog } from "../features/about/AboutDialog";
-import { copyShareLink, copySvg, exportSvg, randomizeSpec, startFresh } from "../lib/spec-actions";
-import { useCanRedo, useCanUndo, useEditorStore, useFileName } from "../state/editor-store";
+import {
+  copyPng,
+  copyShareLink,
+  copySvg,
+  currentBaseName,
+  exportPng,
+  exportSvg,
+  randomizeSpec,
+  startFresh,
+} from "../lib/spec-actions";
+import { useCanRedo, useCanUndo, useEditorStore } from "../state/editor-store";
 import { ShortcutKeys } from "./ShortcutKeys";
 
 export function Header() {
@@ -31,7 +43,8 @@ export function Header() {
   const redo = useEditorStore((state) => state.redo);
   const canUndo = useCanUndo();
   const canRedo = useCanRedo();
-  const fileName = useFileName();
+  const baseName = useEditorStore((state) => (state.fileName ?? "").replace(/\.svg$/i, ""));
+  const derivedBase = currentBaseName();
   const setFileName = useEditorStore((state) => state.setFileName);
   const setPaletteOpen = useEditorStore((state) => state.setPaletteOpen);
 
@@ -101,10 +114,7 @@ export function Header() {
                 <Dices />
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="flex items-center gap-1.5">
-              Randomize everything
-              <ShortcutKeys of="randomize" />
-            </TooltipContent>
+            <TooltipContent>Randomize everything</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -112,26 +122,27 @@ export function Header() {
                 <FilePlus2 />
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="flex items-center gap-1.5">
-              Start fresh
-              <ShortcutKeys of="startFresh" />
-            </TooltipContent>
+            <TooltipContent>Start fresh</TooltipContent>
           </Tooltip>
         </div>
       </div>
 
-      {/* Center: file name */}
-      <Input
-        value={fileName}
-        onChange={(event) => setFileName(event.target.value)}
-        onBlur={(event) => {
-          if (event.target.value.trim() === "") {
-            setFileName(null);
-          }
-        }}
-        className="w-36 text-center font-mono text-xs sm:w-52"
-        aria-label="Export file name"
-      />
+      {/* Center: file name. The .svg extension is fixed, shown as an addon. */}
+      <InputGroup className="mx-auto w-44 sm:w-64">
+        <InputGroupInput
+          value={baseName}
+          placeholder={derivedBase}
+          onChange={(event) => {
+            const next = event.target.value.replace(/\.svg$/i, "").trim();
+            setFileName(next === "" ? null : `${next}.svg`);
+          }}
+          className="text-right font-mono text-xs"
+          aria-label="Export file name"
+        />
+        <InputGroupAddon align="inline-end" className="font-mono text-muted-foreground text-xs">
+          .svg
+        </InputGroupAddon>
+      </InputGroup>
 
       {/* Right cluster: about + search + export */}
       <div className="flex items-center justify-end gap-1.5">
@@ -170,6 +181,11 @@ export function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => void exportPng()}>
+                <FileImage />
+                Export PNG
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => void copySvg()}>
                 <Copy />
                 Copy SVG
@@ -177,12 +193,14 @@ export function Header() {
                   <ShortcutKeys of="copySvg" />
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void copyPng()}>
+                <ImageDown />
+                Copy PNG
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => void copyShareLink()}>
                 <Link />
                 Copy share link
-                <DropdownMenuShortcut>
-                  <ShortcutKeys of="copyLink" />
-                </DropdownMenuShortcut>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
