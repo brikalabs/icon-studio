@@ -1,12 +1,19 @@
 import { Badge } from "@brika/clay/components/badge";
 import {
-  CommandDialog,
+  Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
+  CommandShortcut,
 } from "@brika/clay/components/command";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@brika/clay/components/dialog";
 import {
   backgroundPresets,
   ensureIconifyIcons,
@@ -29,6 +36,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { IconGlyph } from "../../components/IconGlyph";
+import { ShortcutKeys } from "../../components/ShortcutKeys";
 import { backgroundToCss } from "../../lib/gradient-css";
 import {
   copyShareLink,
@@ -66,17 +74,7 @@ export function CommandPalette() {
   const [query, setQuery] = useState("");
   const [iconifyMatches, setIconifyMatches] = useState<readonly string[]>([]);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setOpen(!useEditorStore.getState().paletteOpen);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [setOpen]);
-
+  // The open/close shortcut itself lives in the global registry handler (App).
   useEffect(() => {
     if (!open) {
       setQuery("");
@@ -130,125 +128,157 @@ export function CommandPalette() {
     });
 
   return (
-    <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput
-        placeholder="Search icons, presets, and commands..."
-        value={query}
-        onValueChange={setQuery}
-      />
-      <CommandList>
-        <CommandEmpty>Nothing found.</CommandEmpty>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="overflow-hidden p-0 sm:max-w-lg" showCloseButton={false}>
+        <DialogTitle className="sr-only">Command palette</DialogTitle>
+        <DialogDescription className="sr-only">
+          Search icons, presets, and commands
+        </DialogDescription>
+        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group]]:px-1.5 [&_[cmdk-input]]:h-10 [&_[cmdk-item]]:gap-2 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-1.5 [&_[cmdk-item]_svg]:size-4">
+          <CommandInput
+            placeholder="Search icons, presets, and commands..."
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList className="max-h-[min(56vh,420px)]">
+            <CommandEmpty>Nothing found.</CommandEmpty>
 
-        {iconMatches.length > 0 ? (
-          <CommandGroup heading="Icons">
-            {iconMatches.map((match) => (
+            {iconMatches.length > 0 ? (
+              <CommandGroup heading="Icons">
+                {iconMatches.map((match) => (
+                  <CommandItem
+                    key={`${match.library}:${match.name}`}
+                    value={`${match.name} ${match.label}`}
+                    onSelect={() =>
+                      boundaryRun(() =>
+                        updateSpec({ icon: { type: match.library, name: match.name } }),
+                      )
+                    }
+                  >
+                    <IconGlyph library={match.library} name={match.name} size={16} />
+                    {match.name}
+                    <Badge variant="secondary" className="ml-auto">
+                      {match.label}
+                    </Badge>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ) : null}
+
+            {iconifyMatches.length > 0 ? (
+              <CommandGroup heading="All icons (Iconify)">
+                {iconifyMatches.map((name) => (
+                  <CommandItem
+                    key={`iconify:${name}`}
+                    value={`${name} iconify`}
+                    onSelect={() =>
+                      boundaryRun(() => updateSpec({ icon: { type: "iconify", name } }))
+                    }
+                  >
+                    <IconGlyph library="iconify" name={name} size={16} />
+                    {name}
+                    <Badge variant="secondary" className="ml-auto">
+                      Iconify
+                    </Badge>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ) : null}
+
+            <CommandGroup heading="Actions">
+              <CommandItem onSelect={() => run(exportSvg)}>
+                <Download />
+                Export SVG
+                <CommandShortcut>
+                  <ShortcutKeys of="exportSvg" />
+                </CommandShortcut>
+              </CommandItem>
+              <CommandItem onSelect={() => run(() => void copySvg())}>
+                <Copy />
+                Copy SVG
+                <CommandShortcut>
+                  <ShortcutKeys of="copySvg" />
+                </CommandShortcut>
+              </CommandItem>
+              <CommandItem onSelect={() => run(() => void copyShareLink())}>
+                <Link />
+                Copy share link
+              </CommandItem>
               <CommandItem
-                key={`${match.library}:${match.name}`}
-                value={`${match.name} ${match.label}`}
+                onSelect={() => run(randomizeSpec)}
+                value="randomize surprise random design"
+              >
+                <Dices />
+                Randomize everything
+              </CommandItem>
+              <CommandItem
+                onSelect={() => run(startFresh)}
+                value="start fresh reset everything new"
+              >
+                <FilePlus2 />
+                Start fresh
+              </CommandItem>
+              <CommandItem onSelect={() => run(undo)}>
+                <Undo2 />
+                Undo
+                <CommandShortcut>
+                  <ShortcutKeys of="undo" />
+                </CommandShortcut>
+              </CommandItem>
+              <CommandItem onSelect={() => run(redo)}>
+                <Redo2 />
+                Redo
+                <CommandShortcut>
+                  <ShortcutKeys of="redo" />
+                </CommandShortcut>
+              </CommandItem>
+              <CommandItem
                 onSelect={() =>
-                  boundaryRun(() => updateSpec({ icon: { type: match.library, name: match.name } }))
+                  boundaryRun(() => updateSpec({ offsetX: 0, offsetY: 0, rotation: 0 }))
                 }
               >
-                <IconGlyph library={match.library} name={match.name} size={16} />
-                {match.name}
-                <Badge variant="secondary" className="ml-auto">
-                  {match.label}
-                </Badge>
+                <Crosshair />
+                Reset icon transform
               </CommandItem>
-            ))}
-          </CommandGroup>
-        ) : null}
+            </CommandGroup>
 
-        {iconifyMatches.length > 0 ? (
-          <CommandGroup heading="All icons (Iconify)">
-            {iconifyMatches.map((name) => (
-              <CommandItem
-                key={`iconify:${name}`}
-                value={`${name} iconify`}
-                onSelect={() => boundaryRun(() => updateSpec({ icon: { type: "iconify", name } }))}
-              >
-                <IconGlyph library="iconify" name={name} size={16} />
-                {name}
-                <Badge variant="secondary" className="ml-auto">
-                  Iconify
-                </Badge>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        ) : null}
+            <CommandGroup heading="Browse">
+              {iconLibraries.map((library) => (
+                <CommandItem
+                  key={`browse-${library.id}`}
+                  value={`browse ${library.label} library`}
+                  onSelect={() =>
+                    run(() => {
+                      setPickerLibrary(library.id);
+                      void loadLibrary(library.id);
+                    })
+                  }
+                >
+                  <LibraryBig />
+                  Browse {library.label === "All" ? "all icons" : `${library.label} icons`}
+                </CommandItem>
+              ))}
+            </CommandGroup>
 
-        <CommandGroup heading="Actions">
-          <CommandItem onSelect={() => run(exportSvg)}>
-            <Download />
-            Export SVG
-          </CommandItem>
-          <CommandItem onSelect={() => run(() => void copySvg())}>
-            <Copy />
-            Copy SVG
-          </CommandItem>
-          <CommandItem onSelect={() => run(() => void copyShareLink())}>
-            <Link />
-            Copy share link
-          </CommandItem>
-          <CommandItem onSelect={() => run(randomizeSpec)} value="randomize surprise random design">
-            <Dices />
-            Randomize everything
-          </CommandItem>
-          <CommandItem onSelect={() => run(startFresh)} value="start fresh reset everything new">
-            <FilePlus2 />
-            Start fresh
-          </CommandItem>
-          <CommandItem onSelect={() => run(undo)}>
-            <Undo2 />
-            Undo
-          </CommandItem>
-          <CommandItem onSelect={() => run(redo)}>
-            <Redo2 />
-            Redo
-          </CommandItem>
-          <CommandItem
-            onSelect={() => boundaryRun(() => updateSpec({ offsetX: 0, offsetY: 0, rotation: 0 }))}
-          >
-            <Crosshair />
-            Reset icon transform
-          </CommandItem>
-        </CommandGroup>
-
-        <CommandGroup heading="Browse">
-          {iconLibraries.map((library) => (
-            <CommandItem
-              key={`browse-${library.id}`}
-              value={`browse ${library.label} library`}
-              onSelect={() =>
-                run(() => {
-                  setPickerLibrary(library.id);
-                  void loadLibrary(library.id);
-                })
-              }
-            >
-              <LibraryBig />
-              Browse {library.label === "All" ? "all icons" : `${library.label} icons`}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-
-        <CommandGroup heading="Presets">
-          {backgroundPresets.map((preset) => (
-            <CommandItem
-              key={preset.id}
-              value={`preset ${preset.id}`}
-              onSelect={() => boundaryRun(() => updateSpec({ background: preset.background }))}
-            >
-              <span
-                aria-hidden="true"
-                className="size-4 rounded-sm border border-border/50"
-                style={{ background: backgroundToCss(preset.background) }}
-              />
-              {preset.id}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-      </CommandList>
-    </CommandDialog>
+            <CommandGroup heading="Presets">
+              {backgroundPresets.map((preset) => (
+                <CommandItem
+                  key={preset.id}
+                  value={`preset ${preset.id}`}
+                  onSelect={() => boundaryRun(() => updateSpec({ background: preset.background }))}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="size-4 rounded-sm border border-border/50"
+                    style={{ background: backgroundToCss(preset.background) }}
+                  />
+                  {preset.id}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </DialogContent>
+    </Dialog>
   );
 }

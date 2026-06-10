@@ -4,10 +4,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@brika/clay/components/dropdown-menu";
 import { Input } from "@brika/clay/components/input";
-import { Kbd, KbdGroup } from "@brika/clay/components/kbd";
 import { Separator } from "@brika/clay/components/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@brika/clay/components/tooltip";
 import {
@@ -22,9 +22,9 @@ import {
   Undo2,
 } from "lucide-react";
 import { AboutDialog } from "../features/about/AboutDialog";
-import { MOD_KEY, SHIFT_KEY } from "../lib/shortcuts";
 import { copyShareLink, copySvg, exportSvg, randomizeSpec, startFresh } from "../lib/spec-actions";
 import { useCanRedo, useCanUndo, useEditorStore, useFileName } from "../state/editor-store";
+import { ShortcutKeys } from "./ShortcutKeys";
 
 export function Header() {
   const undo = useEditorStore((state) => state.undo);
@@ -65,10 +65,7 @@ export function Header() {
             </TooltipTrigger>
             <TooltipContent className="flex items-center gap-1.5">
               Undo
-              <KbdGroup>
-                <Kbd>{MOD_KEY}</Kbd>
-                <Kbd>Z</Kbd>
-              </KbdGroup>
+              <ShortcutKeys of="undo" />
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -85,11 +82,7 @@ export function Header() {
             </TooltipTrigger>
             <TooltipContent className="flex items-center gap-1.5">
               Redo
-              <KbdGroup>
-                <Kbd>{SHIFT_KEY}</Kbd>
-                <Kbd>{MOD_KEY}</Kbd>
-                <Kbd>Z</Kbd>
-              </KbdGroup>
+              <ShortcutKeys of="redo" />
             </TooltipContent>
           </Tooltip>
         </div>
@@ -145,16 +138,21 @@ export function Header() {
         >
           <Search className="size-3" />
           <span className="hidden xl:inline">Search...</span>
-          <KbdGroup>
-            <Kbd>{MOD_KEY}</Kbd>
-            <Kbd>K</Kbd>
-          </KbdGroup>
+          <ShortcutKeys of="palette" />
         </button>
         <div className="flex items-center">
-          <Button onClick={exportSvg} size="sm" className="rounded-r-none">
-            <Download />
-            <span className="hidden sm:inline">Export</span>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={exportSvg} size="sm" className="rounded-r-none">
+                <Download />
+                <span className="hidden sm:inline">Export</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="flex items-center gap-1.5">
+              Export SVG
+              <ShortcutKeys of="exportSvg" />
+            </TooltipContent>
+          </Tooltip>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -169,6 +167,9 @@ export function Header() {
               <DropdownMenuItem onSelect={() => void copySvg()}>
                 <Copy />
                 Copy SVG
+                <DropdownMenuShortcut>
+                  <ShortcutKeys of="copySvg" />
+                </DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void copyShareLink()}>
                 <Link />
