@@ -2,41 +2,66 @@ import { Button } from "@brika/clay/components/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@brika/clay/components/input-group";
 import { toast } from "@brika/clay/components/toast";
 import { ToggleGroup, ToggleGroupItem } from "@brika/clay/components/toggle-group";
-import { cn } from "@brika/clay/primitives";
 import {
-  type IconLibraryId,
+  getIconGlyph,
+  type IconifyCollection,
   iconLibraries,
   iconLibraryIdSchema,
+  isIconifyIconMissing,
   isIconLibraryReady,
+  listIconifyCollectionIcons,
   searchIconifyIcons,
   searchIcons,
 } from "@brika/icon-studio-core";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { Search, Shuffle } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { IconGlyph } from "../../components/IconGlyph";
+import { ArrowLeft, Search, Shuffle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useEditorStore } from "../../state/editor-store";
+import { CollectionList } from "./CollectionList";
 import { CustomSvgDropzone } from "./CustomSvgDropzone";
-
-const COLUMNS = 4;
-const ROW_HEIGHT = 64;
+import { IconGrid } from "./IconGrid";
 
 export function IconPicker() {
   const [query, setQuery] = useState("");
-  const [library, setLibrary] = useState<IconLibraryId>("lucide");
+  const library = useEditorStore((state) => state.pickerLibrary);
+  const setLibrary = useEditorStore((state) => state.setPickerLibrary);
   const spec = useEditorStore((state) => state.spec);
   const updateSpec = useEditorStore((state) => state.updateSpec);
   const markUndoBoundary = useEditorStore((state) => state.markUndoBoundary);
   const catalogueVersion = useEditorStore((state) => state.catalogueVersion);
   const loadLibrary = useEditorStore((state) => state.loadLibrary);
   const loadIconifyIcons = useEditorStore((state) => state.loadIconifyIcons);
+
+  const [collection, setCollection] = useState<IconifyCollection | null>(null);
+  const [collectionIcons, setCollectionIcons] = useState<readonly string[]>([]);
   const [remoteNames, setRemoteNames] = useState<readonly string[]>([]);
   const [remoteSearching, setRemoteSearching] = useState(false);
 
-  // The "All" tab searches the Iconify API (debounced), then prefetches the
-  // result glyphs so the grid can render synchronously from the cache.
+  // Tab switches clear navigation state so each tab starts at its root view.
+  const switchLibrary = (next: string) => {
+    const parsed = iconLibraryIdSchema.safeParse(next);
+    if (parsed.success) {
+      setLibrary(parsed.data);
+      void loadLibrary(parsed.data);
+      setQuery("");
+      setCollection(null);
+    }
+  };
+
+  const openCollection = (next: IconifyCollection) => {
+    setCollection(next);
+    setCollectionIcons([]);
+    setQuery("");
+    listIconifyCollectionIcons(next.prefix)
+      .then(setCollectionIcons)
+      .catch(() => {
+        toast.error(`Could not load ${next.name}`);
+        setCollection(null);
+      });
+  };
+
+  // Global Iconify search (debounced), prefetching result glyphs.
   useEffect(() => {
-    if (library !== "iconify") {
+    if (library !== "iconify" || collection !== null) {
       return;
     }
     if (query.trim() === "") {
@@ -56,22 +81,36 @@ export function IconPicker() {
       }
     }, 300);
     return () => window.clearTimeout(handle);
-  }, [library, query, loadIconifyIcons]);
+  }, [library, query, collection, loadIconifyIcons]);
+
+  // Browsing a collection streams glyphs in as rows scroll into view.
+  const fetchVisible = useCallback(
+    (visible: readonly string[]) => {
+      const missing = visible.filter(
+        (name) => !getIconGlyph("iconify", name) && !isIconifyIconMissing(name),
+      );
+      if (missing.length > 0) {
+        void loadIconifyIcons(missing);
+      }
+    },
+    [loadIconifyIcons],
+  );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies(catalogueVersion): the catalogues live outside React; the version bumping is what makes searchIcons return a lazy library's results
-  const names = useMemo(
-    () => (library === "iconify" ? remoteNames : searchIcons(library, query)),
-    [library, query, remoteNames, catalogueVersion],
-  );
-  const selectedName = spec.icon.type === library ? spec.icon.name : null;
+  const names = useMemo<readonly string[]>(() => {
+    if (library !== "iconify") {
+      return searchIcons(library, query);
+    }
+    if (collection) {
+      const needle = query.trim().toLowerCase();
+      return needle
+        ? collectionIcons.filter((name) => name.slice(name.indexOf(":") + 1).includes(needle))
+        : collectionIcons;
+    }
+    return remoteNames;
+  }, [library, query, collection, collectionIcons, remoteNames, catalogueVersion]);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizer({
-    count: Math.ceil(names.length / COLUMNS),
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => ROW_HEIGHT,
-    overscan: 6,
-  });
+  const selectedName = spec.icon.type === library ? spec.icon.name : null;
 
   const pickIcon = (name: string) => {
     markUndoBoundary();
@@ -79,31 +118,36 @@ export function IconPicker() {
   };
 
   const pickRandom = () => {
-    const name = names[Math.floor(Math.random() * names.length)];
+    const pool = library === "iconify" && !collection && names.length === 0 ? [] : names;
+    const name = pool[Math.floor(Math.random() * pool.length)];
     if (name) {
       pickIcon(name);
     }
   };
 
-  const switchLibrary = (next: string) => {
-    const parsed = iconLibraryIdSchema.safeParse(next);
-    if (parsed.success) {
-      setLibrary(parsed.data);
-      void loadLibrary(parsed.data);
-      virtualizer.scrollToIndex(0);
-    }
-  };
+  const browsingCollections = library === "iconify" && collection === null && query.trim() === "";
 
   const emptyMessage = (() => {
     if (library === "iconify") {
+      if (collection && collectionIcons.length === 0) {
+        return "Loading icons...";
+      }
       if (remoteSearching) {
         return "Searching...";
       }
-      return query.trim() === ""
-        ? "Search 200,000+ icons across every Iconify set"
-        : `No icons match "${query}"`;
+      return `No icons match "${query}"`;
     }
     return isIconLibraryReady(library) ? `No icons match "${query}"` : "Loading icons...";
+  })();
+
+  const searchPlaceholder = (() => {
+    if (library !== "iconify") {
+      return "Search icons...";
+    }
+    if (collection) {
+      return `Search ${collection.name}...`;
+    }
+    return "Search 200,000+ icons...";
   })();
 
   return (
@@ -131,7 +175,7 @@ export function IconPicker() {
             </InputGroupAddon>
             <InputGroupInput
               type="search"
-              placeholder="Search icons..."
+              placeholder={searchPlaceholder}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               aria-label="Search icons"
@@ -147,41 +191,37 @@ export function IconPicker() {
             <Shuffle />
           </Button>
         </div>
+        {collection ? (
+          <button
+            type="button"
+            onClick={() => {
+              setCollection(null);
+              setQuery("");
+            }}
+            className="flex items-center gap-1.5 text-muted-foreground text-sm transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" />
+            <span className="truncate">{collection.name}</span>
+            <span className="ml-auto shrink-0 text-xs">
+              {collection.total.toLocaleString("en")} icons
+            </span>
+          </button>
+        ) : null}
       </div>
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-        {names.length === 0 ? (
-          <p className="px-1 py-8 text-center text-sm text-muted-foreground">{emptyMessage}</p>
-        ) : (
-          <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
-            {virtualizer.getVirtualItems().map((row) => (
-              <div
-                key={row.key}
-                className="absolute inset-x-0 grid grid-cols-4 gap-2"
-                style={{ top: 0, height: row.size, transform: `translateY(${row.start}px)` }}
-              >
-                {names.slice(row.index * COLUMNS, row.index * COLUMNS + COLUMNS).map((name) => (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => pickIcon(name)}
-                    title={name}
-                    aria-label={name}
-                    aria-pressed={name === selectedName}
-                    className={cn(
-                      "flex items-center justify-center rounded-lg border text-foreground/80 transition-colors",
-                      name === selectedName
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-transparent bg-card hover:border-border hover:text-foreground",
-                    )}
-                  >
-                    <IconGlyph library={library} name={name} />
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+      {browsingCollections ? (
+        <CollectionList onOpen={openCollection} />
+      ) : (
+        <IconGrid
+          library={library}
+          names={names}
+          selectedName={selectedName}
+          onPick={pickIcon}
+          onVisibleNames={library === "iconify" ? fetchVisible : undefined}
+          emptyMessage={emptyMessage}
+        />
+      )}
+
       <div className="border-t p-3">
         <CustomSvgDropzone />
       </div>

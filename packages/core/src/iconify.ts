@@ -133,6 +133,74 @@ export async function ensureIconifyIcons(names: readonly string[]): Promise<void
   await Promise.all(batches);
 }
 
+export interface IconifyCollection {
+  readonly prefix: string;
+  readonly name: string;
+  readonly total: number;
+  readonly category: string;
+  readonly license?: string;
+}
+
+const collectionsResponseSchema = z.record(
+  z.string(),
+  z.object({
+    name: z.string(),
+    total: z.number(),
+    category: z.string().optional(),
+    license: z.object({ title: z.string().optional() }).optional(),
+    hidden: z.boolean().optional(),
+  }),
+);
+
+let collectionsCache: readonly IconifyCollection[] | null = null;
+
+/** Lists every public Iconify icon set, with counts and license titles. Cached. */
+export async function listIconifyCollections(): Promise<readonly IconifyCollection[]> {
+  if (collectionsCache) {
+    return collectionsCache;
+  }
+  const response = await fetcher(`${apiBase}/collections`);
+  if (!response.ok) {
+    throw new Error(`Iconify collections responded ${response.status}`);
+  }
+  const data = collectionsResponseSchema.parse(await response.json());
+  collectionsCache = Object.entries(data)
+    .filter(([, entry]) => entry.hidden !== true)
+    .map(([prefix, entry]) => ({
+      prefix,
+      name: entry.name,
+      total: entry.total,
+      category: entry.category ?? "Other",
+      license: entry.license?.title,
+    }));
+  return collectionsCache;
+}
+
+const collectionResponseSchema = z.object({
+  prefix: z.string(),
+  uncategorized: z.array(z.string()).optional(),
+  categories: z.record(z.string(), z.array(z.string())).optional(),
+});
+
+const collectionIconsCache = new Map<string, readonly string[]>();
+
+/** Lists every icon of one set as "prefix:name" entries. Cached per prefix. */
+export async function listIconifyCollectionIcons(prefix: string): Promise<readonly string[]> {
+  const cached = collectionIconsCache.get(prefix);
+  if (cached) {
+    return cached;
+  }
+  const response = await fetcher(`${apiBase}/collection?prefix=${encodeURIComponent(prefix)}`);
+  if (!response.ok) {
+    throw new Error(`Iconify collection "${prefix}" responded ${response.status}`);
+  }
+  const data = collectionResponseSchema.parse(await response.json());
+  const names = [...(data.uncategorized ?? []), ...Object.values(data.categories ?? {}).flat()];
+  const full = [...new Set(names)].map((name) => `${data.prefix}:${name}`);
+  collectionIconsCache.set(prefix, full);
+  return full;
+}
+
 /** Full-text search across every Iconify set. Returns "prefix:name" entries. */
 export async function searchIconifyIcons(query: string, limit = 96): Promise<string[]> {
   const trimmed = query.trim();

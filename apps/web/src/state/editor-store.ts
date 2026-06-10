@@ -38,6 +38,9 @@ interface EditorState {
   /** Whether the command palette is open. */
   paletteOpen: boolean;
   setPaletteOpen: (open: boolean) => void;
+  /** Which library tab the picker shows; lifted so the palette can navigate it. */
+  pickerLibrary: IconLibraryId;
+  setPickerLibrary: (library: IconLibraryId) => void;
   undo: () => void;
   redo: () => void;
 }
@@ -49,8 +52,10 @@ function initialSpec(): IconSpec {
   return specFromSearchParams(new URLSearchParams(window.location.search));
 }
 
+const initial = initialSpec();
+
 export const useEditorStore = create<EditorState>((set) => ({
-  spec: initialSpec(),
+  spec: initial,
   fileName: null,
   selected: false,
   catalogueVersion: 0,
@@ -85,6 +90,9 @@ export const useEditorStore = create<EditorState>((set) => ({
   },
   paletteOpen: false,
   setPaletteOpen: (open) => set({ paletteOpen: open }),
+  // A shared link opens the picker on the library it points at.
+  pickerLibrary: initial.icon.type === "custom" ? "lucide" : initial.icon.type,
+  setPickerLibrary: (library) => set({ pickerLibrary: library }),
   undo: () =>
     set((state) => {
       const previous = state.past.at(-1);

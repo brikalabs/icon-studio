@@ -5,7 +5,10 @@ export {
   ensureIconifyIcons,
   getIconifyIcon,
   type IconifyBodyGlyph,
+  type IconifyCollection,
   isIconifyIconMissing,
+  listIconifyCollectionIcons,
+  listIconifyCollections,
   searchIconifyIcons,
 } from "./iconify";
 export {

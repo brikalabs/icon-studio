@@ -4,6 +4,8 @@ import {
   ensureIconifyIcons,
   getIconifyIcon,
   isIconifyIconMissing,
+  listIconifyCollectionIcons,
+  listIconifyCollections,
   searchIconifyIcons,
 } from "./iconify";
 import { getIconGlyph, getIconNames, isIconLibraryReady } from "./libraries";
@@ -17,6 +19,28 @@ configureIconify({
     const parsed = new URL(url);
     if (parsed.pathname === "/search") {
       return Promise.resolve(Response.json({ icons: ["mdi:home", "mdi:home-outline"] }));
+    }
+    if (parsed.pathname === "/collections") {
+      return Promise.resolve(
+        Response.json({
+          mdi: {
+            name: "Material Design Icons",
+            total: 7447,
+            category: "General",
+            license: { title: "Apache 2.0" },
+          },
+          secret: { name: "Hidden Set", total: 1, hidden: true },
+        }),
+      );
+    }
+    if (parsed.pathname === "/collection") {
+      return Promise.resolve(
+        Response.json({
+          prefix: "mdi",
+          uncategorized: ["home"],
+          categories: { Alerts: ["bell", "bell-off"], Other: ["home"] },
+        }),
+      );
     }
     if (parsed.pathname === "/mdi.json") {
       return Promise.resolve(
@@ -55,6 +79,30 @@ describe("iconify", () => {
     await ensureIconifyIcons(["noprefix"]);
     expect(isIconifyIconMissing("noprefix")).toBe(true);
     expect(requests.some((url) => url.includes("noprefix"))).toBe(false);
+  });
+
+  test("collections list excludes hidden sets and is cached", async () => {
+    const collections = await listIconifyCollections();
+    expect(collections).toEqual([
+      {
+        prefix: "mdi",
+        name: "Material Design Icons",
+        total: 7447,
+        category: "General",
+        license: "Apache 2.0",
+      },
+    ]);
+    const fetches = requests.filter((url) => url.endsWith("/collections")).length;
+    await listIconifyCollections();
+    expect(requests.filter((url) => url.endsWith("/collections")).length).toBe(fetches);
+  });
+
+  test("collection icon listing flattens categories and dedupes", async () => {
+    const icons = await listIconifyCollectionIcons("mdi");
+    expect(icons).toEqual(["mdi:home", "mdi:bell", "mdi:bell-off"]);
+    const fetches = requests.filter((url) => url.includes("/collection?")).length;
+    await listIconifyCollectionIcons("mdi");
+    expect(requests.filter((url) => url.includes("/collection?")).length).toBe(fetches);
   });
 
   test("search returns full prefix:name entries", async () => {

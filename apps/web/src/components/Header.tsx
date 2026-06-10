@@ -10,7 +10,18 @@ import { Input } from "@brika/clay/components/input";
 import { Kbd, KbdGroup } from "@brika/clay/components/kbd";
 import { Separator } from "@brika/clay/components/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@brika/clay/components/tooltip";
-import { ChevronDown, Command, Copy, Download, Link, Redo2, Undo2 } from "lucide-react";
+import {
+  ChevronDown,
+  Command,
+  Copy,
+  Dices,
+  Download,
+  FilePlus2,
+  Link,
+  Redo2,
+  Undo2,
+} from "lucide-react";
+import { randomizeSpec, startFresh } from "../lib/spec-actions";
 import { useExportActions } from "../lib/use-export-actions";
 import { useCanRedo, useCanUndo, useEditorStore, useFileName } from "../state/editor-store";
 
@@ -76,6 +87,28 @@ export function Header() {
               <Kbd>Z</Kbd>
             </KbdGroup>
           </TooltipContent>
+        </Tooltip>
+        <Separator orientation="vertical" className="h-5" />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={randomizeSpec}
+              aria-label="Randomize everything"
+            >
+              <Dices />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Randomize everything</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-sm" onClick={startFresh} aria-label="Start fresh">
+              <FilePlus2 />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Start fresh</TooltipContent>
         </Tooltip>
       </div>
 

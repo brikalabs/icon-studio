@@ -18,8 +18,12 @@ Built with [Clay](https://clay.brika.dev), Brika's design system.
   [Iconify](https://iconify.design) API, or any SVG file via drag-and-drop.
   Each bundled catalogue beyond lucide is a lazy-loaded chunk; Iconify glyphs
   are fetched on demand.
-- **Command palette**: Cmd/Ctrl+K for icon search, presets, export, undo/redo,
-  and transform resets without touching the mouse.
+- **Browse, not just search**: the All tab lists every Iconify set grouped by
+  category (with counts and licenses); click into a set and scroll, glyphs
+  stream in as they become visible.
+- **Command palette**: Cmd/Ctrl+K searches local libraries and the whole
+  Iconify universe, jumps between library tabs, applies presets, exports,
+  undoes/redoes, randomizes the whole design, or starts fresh.
 - **Gradient engine**: linear and radial fills with 2 to 8 draggable color
   stops, angle control, radial center/radius, and 32 curated presets.
 - **On-canvas editing**: click the icon to select it, then drag to move
