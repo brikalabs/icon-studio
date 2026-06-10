@@ -1,5 +1,7 @@
 # Icon Studio
 
+**Live at [icon.brika.dev](https://icon.brika.dev)**
+
 Design square SVG icons for [Brika](https://brika.dev) plugins. Pick from
 10,000+ glyphs across four libraries, drop in your own SVG, tune a multi-stop
 gradient, drag the icon into place, and export clean, standalone SVG.
@@ -73,9 +75,10 @@ bun packages/cli/src/index.ts layout-grid --preset raycast --scale 0.5 -o apps/w
 ## Deploy
 
 The web app ships as a Cloudflare Worker with static assets
-(`apps/web/wrangler.jsonc`). Releases are automatic through Cloudflare's
-git integration (Workers Builds): connect this repository in the Cloudflare
-dashboard with:
+(`apps/web/wrangler.jsonc`), served at [icon.brika.dev](https://icon.brika.dev).
+Releases are automatic: the repository is connected through Cloudflare's git
+integration (Workers Builds), so every push to `main` builds and deploys.
+Build settings in the Cloudflare dashboard:
 
 - Root directory: `/` (workspace install must run from the repo root)
 - Build command: `bun install && bun run build`
