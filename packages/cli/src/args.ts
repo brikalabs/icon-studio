@@ -7,10 +7,13 @@ import {
   getBackgroundPreset,
   hexColorSchema,
   type IconLibraryId,
+  type IconSource,
   type IconSpec,
   iconLibraryIdSchema,
   iconSpecSchema,
   suggestFileName,
+  textFontFamilySchema,
+  textFontWeightSchema,
 } from "@brika/icon-studio-core";
 
 export interface CliCommand {
@@ -48,6 +51,11 @@ Options
       --rotate <deg>      icon rotation around its center (default: 0)
       --stroke <width>    lucide stroke width (default: 2)
       --noise <0..1>      film-grain overlay strength (default: 0)
+      --noise-scale <x>   grain size multiplier, 0.1 fine to 3 coarse (default: 1)
+      --glare <0..1>      glossy radial highlight strength (default: 0)
+      --text <chars>      render a 1-4 character monogram instead of an icon
+      --font <id>         monogram font: sans (default), serif, or mono
+      --weight <w>        monogram weight: 400, 500, 600, 700 (default), or 800
       --custom <file>     embed a custom SVG file instead of a library icon
   -h, --help              show this help
 
@@ -57,6 +65,7 @@ Examples
   brika-icon github --lib brand --bg "#18181B"
   brika-icon bolt --lib tabler --preset midnight
   brika-icon mdi:rocket-launch --lib iconify --preset ocean
+  brika-icon --text BR --font mono --preset midnight --glare 0.4
   brika-icon --search alarm --lib hero
 `;
 
@@ -166,6 +175,11 @@ export function parseCliArgs(
       rotate: { type: "string" },
       stroke: { type: "string" },
       noise: { type: "string" },
+      "noise-scale": { type: "string" },
+      glare: { type: "string" },
+      text: { type: "string" },
+      font: { type: "string", default: "sans" },
+      weight: { type: "string", default: "700" },
       custom: { type: "string" },
       search: { type: "string" },
       "list-presets": { type: "boolean", default: false },
@@ -199,17 +213,32 @@ export function parseCliArgs(
   }
 
   const iconName = positionals[0];
-  if (iconName === undefined && values.custom === undefined) {
+  if (iconName === undefined && values.custom === undefined && values.text === undefined) {
     throw new Error("missing icon name (try `brika-icon bell` or `brika-icon --help`)");
   }
+
+  const icon = ((): IconSource => {
+    if (values.custom !== undefined) {
+      return { type: "custom", svg: readFile(values.custom) };
+    }
+    if (values.text !== undefined) {
+      const family = textFontFamilySchema.safeParse(values.font);
+      if (!family.success) {
+        throw new Error(`--font expects sans, serif, or mono; got "${values.font}"`);
+      }
+      const weight = textFontWeightSchema.safeParse(values.weight);
+      if (!weight.success) {
+        throw new Error(`--weight expects 400, 500, 600, 700, or 800; got "${values.weight}"`);
+      }
+      return { type: "text", text: values.text, fontFamily: family.data, fontWeight: weight.data };
+    }
+    return { type: library.data, name: iconName ?? "bell" };
+  })();
 
   const spec = iconSpecSchema.parse({
     canvasSize: parseNumberFlag("size", values.size, defaults.canvasSize),
     background: resolveBackground(values, defaults.background),
-    icon:
-      values.custom !== undefined
-        ? { type: "custom", svg: readFile(values.custom) }
-        : { type: library.data, name: iconName ?? "bell" },
+    icon,
     iconColor:
       values["icon-color"] === undefined
         ? defaults.iconColor
@@ -220,6 +249,8 @@ export function parseCliArgs(
     rotation: parseNumberFlag("rotate", values.rotate, 0),
     strokeWidth: parseNumberFlag("stroke", values.stroke, defaults.strokeWidth),
     noise: parseNumberFlag("noise", values.noise, 0),
+    noiseScale: parseNumberFlag("noise-scale", values["noise-scale"], 1),
+    glare: parseNumberFlag("glare", values.glare, 0),
   });
 
   return { ...base, spec, outFile: values.out ?? suggestFileName(spec) };

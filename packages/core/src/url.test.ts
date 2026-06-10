@@ -89,8 +89,26 @@ describe("URL codec", () => {
       rotation: 30,
       strokeWidth: 1.75,
       noise: 0.25,
+      noiseScale: 1.5,
+      glare: 0.4,
     };
     expect(roundTrip(spec)).toEqual(spec);
+  });
+
+  test("round-trips monogram text icons compactly", () => {
+    const spec: IconSpec = {
+      ...createDefaultIconSpec(),
+      icon: { type: "text", text: "BR", fontFamily: "mono", fontWeight: "800" },
+    };
+    expect(specToSearchParams(spec).toString()).toBe("t=BR&tf=mono&tw=800");
+    expect(roundTrip(spec)).toEqual(spec);
+
+    const defaults: IconSpec = {
+      ...createDefaultIconSpec(),
+      icon: { type: "text", text: "A", fontFamily: "sans", fontWeight: "700" },
+    };
+    expect(specToSearchParams(defaults).toString()).toBe("t=A");
+    expect(roundTrip(defaults)).toEqual(defaults);
   });
 
   test("solid backgrounds and non-lucide libraries stay compact", () => {

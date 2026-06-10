@@ -102,10 +102,48 @@ describe("buildIconSvg", () => {
   test("noise adds a turbulence grain layer above the icon", () => {
     const svg = buildIconSvg({ noise: 0.4 });
     expect(svg).toContain("<feTurbulence");
+    expect(svg).toContain('baseFrequency="0.65"');
     expect(svg).toContain('opacity="0.2"');
     const grainAt = svg.indexOf('filter="url(#icon-studio-noise)"');
     const iconAt = svg.indexOf("<g transform=");
     expect(grainAt).toBeGreaterThan(iconAt);
+  });
+
+  test("noiseScale coarsens the grain by lowering the frequency", () => {
+    const svg = buildIconSvg({ noise: 0.4, noiseScale: 2 });
+    expect(svg).toContain('baseFrequency="0.325"');
+  });
+
+  test("glare renders a white radial sheen above the icon", () => {
+    const svg = buildIconSvg({ glare: 0.5 });
+    expect(svg).toContain('<radialGradient id="icon-studio-glare"');
+    expect(svg).toContain('stop-opacity="0.275"');
+    const glareAt = svg.indexOf('fill="url(#icon-studio-glare)"');
+    expect(glareAt).toBeGreaterThan(svg.indexOf("<g transform="));
+    expect(buildIconSvg({ glare: 0 })).not.toContain("icon-studio-glare");
+  });
+
+  test("text icons render a centered monogram", () => {
+    const svg = buildIconSvg({
+      icon: { type: "text", text: "BR", fontFamily: "mono", fontWeight: "800" },
+      canvasSize: 512,
+      iconColor: "#FFD200",
+    });
+    expect(svg).toContain('text-anchor="middle"');
+    expect(svg).toContain('dominant-baseline="central"');
+    expect(svg).toContain('font-weight="800"');
+    expect(svg).toContain("JetBrains Mono");
+    expect(svg).toContain('fill="#FFD200"');
+    expect(svg).toContain(">BR</text>");
+  });
+
+  test("text icons escape markup and honor rotation", () => {
+    const svg = buildIconSvg({
+      icon: { type: "text", text: "<&>" },
+      rotation: 45,
+    });
+    expect(svg).toContain("&lt;&amp;&gt;</text>");
+    expect(svg).toContain("rotate(45 256 256)");
   });
 
   test("noise 0 leaves the document untouched", () => {
@@ -200,7 +238,12 @@ describe("suggestFileName", () => {
     expect(suggestFileName({ icon: { type: "iconify", name: "mdi:home" } })).toBe("mdi-home.svg");
   });
 
-  test("falls back for custom icons", () => {
+  test("falls back for custom icons and slugifies monograms", () => {
     expect(suggestFileName({ icon: { type: "custom", svg: "<svg></svg>" } })).toBe("icon.svg");
+    expect(
+      suggestFileName({
+        icon: { type: "text", text: "BR", fontFamily: "sans", fontWeight: "700" },
+      }),
+    ).toBe("br.svg");
   });
 });

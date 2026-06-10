@@ -19,6 +19,7 @@ import { useEditorStore } from "../../state/editor-store";
 import { CollectionList } from "./CollectionList";
 import { CustomSvgDropzone } from "./CustomSvgDropzone";
 import { IconGrid } from "./IconGrid";
+import { TextIconInput } from "./TextIconInput";
 
 export function IconPicker() {
   const [query, setQuery] = useState("");
@@ -222,7 +223,8 @@ export function IconPicker() {
         />
       )}
 
-      <div className="border-t p-3">
+      <div className="flex flex-col gap-2 border-t p-3">
+        <TextIconInput />
         <CustomSvgDropzone />
       </div>
     </div>

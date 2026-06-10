@@ -1,10 +1,4 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@brika/clay/components/select";
+import { ToggleGroup, ToggleGroupItem } from "@brika/clay/components/toggle-group";
 import { type Background, COVER_RADIUS, type GradientStop } from "@brika/icon-studio-core";
 import { useEditorStore } from "../../state/editor-store";
 import { ColorField } from "./ColorField";
@@ -44,7 +38,6 @@ function convertBackground(current: Background, type: Background["type"]): Backg
 
 export function BackgroundControls() {
   const background = useEditorStore((state) => state.spec.background);
-  const noise = useEditorStore((state) => state.spec.noise);
   const updateSpec = useEditorStore((state) => state.updateSpec);
   const markUndoBoundary = useEditorStore((state) => state.markUndoBoundary);
 
@@ -52,27 +45,30 @@ export function BackgroundControls() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-muted-foreground">Fill type</span>
-        <Select
-          value={background.type}
-          onValueChange={(value) => {
-            if (value === "solid" || value === "linear" || value === "radial") {
-              markUndoBoundary();
-              setBackground(convertBackground(background, value));
-            }
-          }}
-        >
-          <SelectTrigger size="sm" className="w-32" aria-label="Fill type">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="linear">Linear</SelectItem>
-            <SelectItem value="radial">Radial</SelectItem>
-            <SelectItem value="solid">Solid</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        className="w-full"
+        value={background.type}
+        onValueChange={(value) => {
+          if (value === "solid" || value === "linear" || value === "radial") {
+            markUndoBoundary();
+            setBackground(convertBackground(background, value));
+          }
+        }}
+        aria-label="Fill type"
+      >
+        <ToggleGroupItem value="linear" className="flex-1">
+          Linear
+        </ToggleGroupItem>
+        <ToggleGroupItem value="radial" className="flex-1">
+          Radial
+        </ToggleGroupItem>
+        <ToggleGroupItem value="solid" className="flex-1">
+          Solid
+        </ToggleGroupItem>
+      </ToggleGroup>
 
       {background.type === "solid" ? (
         <ColorField
@@ -134,16 +130,6 @@ export function BackgroundControls() {
           />
         </>
       ) : null}
-
-      <SliderRow
-        label="Noise"
-        value={Math.round(noise * 100)}
-        onChange={(next) => updateSpec({ noise: next / 100 })}
-        min={0}
-        max={100}
-        step={1}
-        unit="%"
-      />
     </div>
   );
 }

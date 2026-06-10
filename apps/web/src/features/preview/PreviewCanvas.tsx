@@ -74,6 +74,7 @@ export function PreviewCanvas() {
 
   const waitingForLibrary =
     spec.icon.type !== "custom" &&
+    spec.icon.type !== "text" &&
     (!isIconLibraryReady(spec.icon.type) ||
       (spec.icon.type === "iconify" &&
         !getIconGlyph("iconify", spec.icon.name) &&

@@ -7,6 +7,8 @@ import {
   type IconSpec,
   iconLibraryIdSchema,
   iconSpecSchema,
+  textFontFamilySchema,
+  textFontWeightSchema,
 } from "./types";
 
 /**
@@ -22,10 +24,10 @@ import {
  * typical link looks like `?i=rocket&p=sunset`. Pasted custom SVGs are
  * deliberately not serialized (they would not fit in a URL).
  *
- * Keys: i icon, l library (when not lucide), p preset, c solid color,
- * g/rg linear/radial stops, a angle, rc radial center, rr radial radius,
- * sz canvas, ic icon color, sc scale, x/y offset, ro rotation, sw stroke
- * width, n noise.
+ * Keys: i icon, l library (when not lucide), t monogram text (tf family,
+ * tw weight), p preset, c solid color, g/rg linear/radial stops, a angle,
+ * rc radial center, rr radial radius, sz canvas, ic icon color, sc scale,
+ * x/y offset, ro rotation, sw stroke width, n noise, ns grain size, gl glare.
  */
 
 const PERCENT = 100;
@@ -159,7 +161,15 @@ export function specToSearchParams(spec: IconSpec): URLSearchParams {
   const defaults = createDefaultIconSpec();
   const params = new URLSearchParams();
 
-  if (spec.icon.type !== "custom") {
+  if (spec.icon.type === "text") {
+    params.set("t", spec.icon.text);
+    if (spec.icon.fontFamily !== "sans") {
+      params.set("tf", spec.icon.fontFamily);
+    }
+    if (spec.icon.fontWeight !== "700") {
+      params.set("tw", spec.icon.fontWeight);
+    }
+  } else if (spec.icon.type !== "custom") {
     if (spec.icon.type !== "lucide" || spec.icon.name !== "bell") {
       params.set("i", spec.icon.name);
     }
@@ -193,21 +203,42 @@ export function specToSearchParams(spec: IconSpec): URLSearchParams {
   }
   if (spec.noise !== 0) {
     params.set("n", percent(spec.noise));
+    if (spec.noiseScale !== 1) {
+      params.set("ns", percent(spec.noiseScale));
+    }
+  }
+  if (spec.glare !== 0) {
+    params.set("gl", percent(spec.glare));
   }
   return params;
+}
+
+function readIcon(params: URLSearchParams): IconSpec["icon"] {
+  const text = params.get("t");
+  if (text !== null) {
+    const family = textFontFamilySchema.safeParse(params.get("tf") ?? "sans");
+    const weight = textFontWeightSchema.safeParse(params.get("tw") ?? "700");
+    return {
+      type: "text",
+      text,
+      fontFamily: family.success ? family.data : "sans",
+      fontWeight: weight.success ? weight.data : "700",
+    };
+  }
+  const library = iconLibraryIdSchema.safeParse(params.get("l") ?? "lucide");
+  return {
+    type: library.success ? library.data : "lucide",
+    name: params.get("i") ?? "bell",
+  };
 }
 
 /** Tolerant decode: anything missing or malformed falls back to defaults. */
 export function specFromSearchParams(params: URLSearchParams): IconSpec {
   const defaults = createDefaultIconSpec();
-  const library = iconLibraryIdSchema.safeParse(params.get("l") ?? "lucide");
   const candidate: IconSpec = {
     canvasSize: readNumber(params.get("sz")) ?? defaults.canvasSize,
     background: readBackground(params, defaults.background),
-    icon: {
-      type: library.success ? library.data : "lucide",
-      name: params.get("i") ?? "bell",
-    },
+    icon: readIcon(params),
     iconColor: readColor(params.get("ic")) ?? defaults.iconColor,
     iconScale: (readNumber(params.get("sc")) ?? defaults.iconScale * PERCENT) / PERCENT,
     offsetX: readNumber(params.get("x")) ?? 0,
@@ -215,6 +246,8 @@ export function specFromSearchParams(params: URLSearchParams): IconSpec {
     rotation: readNumber(params.get("ro")) ?? 0,
     strokeWidth: readNumber(params.get("sw")) ?? defaults.strokeWidth,
     noise: (readNumber(params.get("n")) ?? 0) / PERCENT,
+    noiseScale: (readNumber(params.get("ns")) ?? PERCENT) / PERCENT,
+    glare: (readNumber(params.get("gl")) ?? 0) / PERCENT,
   };
   const parsed = iconSpecSchema.safeParse(candidate);
   return parsed.success ? parsed.data : defaults;

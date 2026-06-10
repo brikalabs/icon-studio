@@ -12,17 +12,17 @@ import { Separator } from "@brika/clay/components/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@brika/clay/components/tooltip";
 import {
   ChevronDown,
-  Command,
   Copy,
   Dices,
   Download,
   FilePlus2,
   Link,
   Redo2,
+  Search,
   Undo2,
 } from "lucide-react";
-import { randomizeSpec, startFresh } from "../lib/spec-actions";
-import { useExportActions } from "../lib/use-export-actions";
+import { AboutDialog } from "../features/about/AboutDialog";
+import { copyShareLink, copySvg, exportSvg, randomizeSpec, startFresh } from "../lib/spec-actions";
 import { useCanRedo, useCanUndo, useEditorStore, useFileName } from "../state/editor-store";
 
 export function Header() {
@@ -33,7 +33,6 @@ export function Header() {
   const fileName = useFileName();
   const setFileName = useEditorStore((state) => state.setFileName);
   const setPaletteOpen = useEditorStore((state) => state.setPaletteOpen);
-  const exportActions = useExportActions();
 
   return (
     <header className="grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 border-b px-4">
@@ -125,21 +124,19 @@ export function Header() {
       />
 
       <div className="flex items-center justify-end gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
+        <AboutDialog />
+        <button
+          type="button"
           onClick={() => setPaletteOpen(true)}
           aria-label="Open command palette"
-          className="text-muted-foreground"
+          className="flex h-8 items-center gap-2 rounded-md border bg-card px-2.5 text-muted-foreground text-sm transition-colors hover:border-ring hover:text-foreground"
         >
-          <Command />
-          <KbdGroup>
-            <Kbd>⌘</Kbd>
-            <Kbd>K</Kbd>
-          </KbdGroup>
-        </Button>
+          <Search className="size-3.5" />
+          <span className="hidden xl:inline">Search...</span>
+          <Kbd>⌘K</Kbd>
+        </button>
         <div className="flex items-center">
-          <Button onClick={exportActions.download} className="rounded-r-none">
+          <Button onClick={exportSvg} className="rounded-r-none">
             <Download />
             Export SVG
           </Button>
@@ -154,11 +151,11 @@ export function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => void exportActions.copySvg()}>
+              <DropdownMenuItem onSelect={() => void copySvg()}>
                 <Copy />
                 Copy SVG
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => void exportActions.copyLink()}>
+              <DropdownMenuItem onSelect={() => void copyShareLink()}>
                 <Link />
                 Copy share link
               </DropdownMenuItem>

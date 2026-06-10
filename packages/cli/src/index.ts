@@ -23,7 +23,7 @@ async function main(argv: readonly string[]): Promise<number> {
   await ensureIconLibrary(command.library);
   if (command.spec.icon.type === "iconify") {
     await ensureIconifyIcons([command.spec.icon.name]);
-  } else if (command.spec.icon.type !== "custom") {
+  } else if (command.spec.icon.type !== "custom" && command.spec.icon.type !== "text") {
     await ensureIconLibrary(command.spec.icon.type);
   }
 

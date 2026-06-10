@@ -57,7 +57,22 @@ export const customIconSourceSchema = z.object({
   svg: z.string().min(1),
 });
 
-export const iconSourceSchema = z.union([libraryIconSourceSchema, customIconSourceSchema]);
+export const textFontFamilySchema = z.enum(["sans", "serif", "mono"]);
+export const textFontWeightSchema = z.enum(["400", "500", "600", "700", "800"]);
+
+/** A short monogram (up to 4 characters) rendered instead of a glyph. */
+export const textIconSourceSchema = z.object({
+  type: z.literal("text"),
+  text: z.string().min(1).max(4),
+  fontFamily: textFontFamilySchema.default("sans"),
+  fontWeight: textFontWeightSchema.default("700"),
+});
+
+export const iconSourceSchema = z.union([
+  libraryIconSourceSchema,
+  textIconSourceSchema,
+  customIconSourceSchema,
+]);
 
 export const iconSpecSchema = z.object({
   /** Edge length of the square canvas, in pixels. */
@@ -82,8 +97,12 @@ export const iconSpecSchema = z.object({
   rotation: z.number().min(0).max(360).default(0),
   /** Lucide stroke width (24px grid units, lucide default is 2). */
   strokeWidth: z.number().min(0.25).max(6).default(2),
-  /** Film-grain overlay strength over the background, 0 disables it. */
+  /** Film-grain overlay strength, 0 disables it. */
   noise: z.number().min(0).max(1).default(0),
+  /** Grain size multiplier: above 1 is coarser, below 1 is finer. */
+  noiseScale: z.number().min(0.1).max(3).default(1),
+  /** Glossy radial highlight strength from the top-left, 0 disables it. */
+  glare: z.number().min(0).max(1).default(0),
 });
 
 export type GradientStop = z.infer<typeof gradientStopSchema>;

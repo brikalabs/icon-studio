@@ -1,14 +1,50 @@
+import { toast } from "@brika/clay/components/toast";
 import {
   type Background,
   backgroundPresets,
+  buildIconSvg,
   createDefaultIconSpec,
   getIconNames,
   type IconLibraryId,
   type IconSource,
   iconLibraries,
   isIconLibraryReady,
+  suggestFileName,
 } from "@brika/icon-studio-core";
 import { useEditorStore } from "../state/editor-store";
+import { copyToClipboard, downloadSvg } from "./svg-io";
+
+function renderCurrentSvg(): string | null {
+  try {
+    return buildIconSvg(useEditorStore.getState().spec);
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Could not render the icon");
+    return null;
+  }
+}
+
+export function exportSvg(): void {
+  const svg = renderCurrentSvg();
+  if (svg) {
+    const { spec, fileName } = useEditorStore.getState();
+    const name = fileName ?? suggestFileName(spec);
+    downloadSvg(svg, name);
+    toast.success(`Exported ${name}`);
+  }
+}
+
+export async function copySvg(): Promise<void> {
+  const svg = renderCurrentSvg();
+  if (svg) {
+    await copyToClipboard(svg);
+    toast.success("SVG copied to clipboard");
+  }
+}
+
+export async function copyShareLink(): Promise<void> {
+  await copyToClipboard(window.location.href);
+  toast.success("Share link copied");
+}
 
 /** Back to the default design; one undo step restores the previous state. */
 export function startFresh(): void {

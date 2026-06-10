@@ -47,5 +47,8 @@ export {
   type RadialBackground,
   radialBackgroundSchema,
   solidBackgroundSchema,
+  textFontFamilySchema,
+  textFontWeightSchema,
+  textIconSourceSchema,
 } from "./types";
 export { specFromSearchParams, specToSearchParams } from "./url";

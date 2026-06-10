@@ -3,8 +3,9 @@
 **Live at [icon.brika.dev](https://icon.brika.dev)**
 
 Design square SVG icons for [Brika](https://brika.dev) plugins. Pick from
-10,000+ glyphs across four libraries, drop in your own SVG, tune a multi-stop
-gradient, drag the icon into place, and export clean, standalone SVG.
+200,000+ glyphs, type a monogram, or drop in your own SVG; tune a multi-stop
+gradient with glare and grain; drag the icon into place; export clean,
+standalone SVG.
 
 Built with [Clay](https://clay.brika.dev), Brika's design system.
 
@@ -30,7 +31,12 @@ Built with [Clay](https://clay.brika.dev), Brika's design system.
   (snaps to center with guide lines), corner handles to resize, rotate handle
   to spin (shift snaps to 15°). Alignment shortcuts and sliders mirror
   everything in the panel.
-- **Finish**: film-grain noise overlay, stroke-width control for lucide.
+- **Monograms**: type 1-4 characters instead of picking a glyph, with sans,
+  serif, or mono styling and adjustable weight.
+- **Finish**: glossy radial glare, film-grain noise with adjustable grain
+  size, stroke-width control for the stroke libraries.
+- **Keyboard-first**: ⌘K palette, ⌘S export, ⇧⌘C copy, 1-5 library tabs,
+  / search, M mask cycle; the full list lives in the in-app About dialog.
 - **SVG-only export**: download, copy markup, or copy a share link.
 - **Short share URLs**: only non-default settings are encoded, presets go by
   id, so a typical link is `?i=rocket&p=sunset`.
@@ -95,3 +101,8 @@ Build settings in the Cloudflare dashboard:
 - Deploy command: `npx wrangler deploy --config apps/web/wrangler.jsonc`
 
 Manual deploy: `bun run deploy` (requires `wrangler login`).
+
+## License
+
+MIT. Bundled icon data keeps its upstream licenses (see
+`packages/core/src/data/NOTICE.md` and the per-set licenses shown in the app).

@@ -8,10 +8,17 @@ import {
   type IconSpecInput,
   iconSpecSchema,
 } from "./types";
-import { formatNumber, serializeAttributes } from "./xml";
+import { escapeXml, formatNumber, serializeAttributes } from "./xml";
 
 const GRADIENT_ID = "icon-studio-bg";
 const NOISE_ID = "icon-studio-noise";
+const GLARE_ID = "icon-studio-glare";
+
+const FONT_STACKS: Readonly<Record<"sans" | "serif" | "mono", string>> = {
+  sans: "'Inter', system-ui, -apple-system, sans-serif",
+  serif: "Georgia, 'Times New Roman', serif",
+  mono: "'JetBrains Mono', 'SF Mono', Menlo, monospace",
+};
 
 function toRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
@@ -72,19 +79,36 @@ function renderGradientDef(background: Background): string {
  * Film-grain: monochrome fractal turbulence blended over the whole artwork,
  * icon included. `mix-blend-mode` keeps mid-grays neutral; renderers that
  * ignore it still show plausible grain because the rect's opacity stays low.
+ * `noiseScale` divides the turbulence frequency: bigger means coarser grain.
  */
-function renderNoise(noise: number, size: number): { def: string; layer: string } {
-  if (noise <= 0) {
+function renderNoise(spec: IconSpec, size: number): { def: string; layer: string } {
+  if (spec.noise <= 0) {
     return { def: "", layer: "" };
   }
+  const frequency = formatNumber(0.65 / spec.noiseScale);
   const def =
     `<filter id="${NOISE_ID}" x="0" y="0" width="100%" height="100%">` +
-    `<feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>` +
+    `<feTurbulence type="fractalNoise" baseFrequency="${frequency}" numOctaves="3" stitchTiles="stitch"/>` +
     `<feColorMatrix type="saturate" values="0"/>` +
     `</filter>`;
   const layer =
     `<rect width="${size}" height="${size}" filter="url(#${NOISE_ID})"` +
-    ` opacity="${formatNumber(noise * 0.5)}" style="mix-blend-mode:overlay"/>`;
+    ` opacity="${formatNumber(spec.noise * 0.5)}" style="mix-blend-mode:overlay"/>`;
+  return { def, layer };
+}
+
+/** Glossy sheen: a white radial fade anchored near the top-left corner. */
+function renderGlare(glare: number, size: number): { def: string; layer: string } {
+  if (glare <= 0) {
+    return { def: "", layer: "" };
+  }
+  const def =
+    `<radialGradient id="${GLARE_ID}" cx="0.28" cy="0.22" r="0.85">` +
+    `<stop offset="0" stop-color="#FFFFFF" stop-opacity="${formatNumber(0.55 * glare)}"/>` +
+    `<stop offset="0.55" stop-color="#FFFFFF" stop-opacity="${formatNumber(0.12 * glare)}"/>` +
+    `<stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>` +
+    `</radialGradient>`;
+  const layer = `<rect width="${size}" height="${size}" fill="url(#${GLARE_ID})"/>`;
   return { def, layer };
 }
 
@@ -132,6 +156,31 @@ function gridTransform(
 
 function renderIconLayer(spec: IconSpec): string {
   const box = iconBox(spec);
+
+  if (spec.icon.type === "text") {
+    const { text, fontFamily, fontWeight } = spec.icon;
+    // Monogram sizing: one glyph nearly fills the box, longer text shrinks.
+    const fontSize = Math.min(box.size * 0.82, (box.size * 1.18) / text.length ** 0.85);
+    const cx = box.x + box.size / 2;
+    const cy = box.y + box.size / 2;
+    const attributes = serializeAttributes({
+      x: formatNumber(cx),
+      y: formatNumber(cy),
+      "text-anchor": "middle",
+      "dominant-baseline": "central",
+      "font-family": FONT_STACKS[fontFamily],
+      "font-size": formatNumber(fontSize),
+      "font-weight": fontWeight,
+      "letter-spacing": "-0.02em",
+      fill: spec.iconColor,
+      ...(spec.rotation === 0
+        ? {}
+        : {
+            transform: `rotate(${formatNumber(spec.rotation)} ${formatNumber(cx)} ${formatNumber(cy)})`,
+          }),
+    });
+    return `<text${attributes}>${escapeXml(text)}</text>`;
+  }
 
   if (spec.icon.type === "custom") {
     const embedded = embedCustomSvg(spec.icon.svg, box, spec.iconColor);
@@ -189,17 +238,23 @@ export function buildIconSvg(input: IconSpecInput): string {
   });
 
   const gradientDef = renderGradientDef(spec.background);
-  const noise = renderNoise(spec.noise, size);
-  const defs = gradientDef || noise.def ? `<defs>${gradientDef}${noise.def}</defs>` : "";
+  const noise = renderNoise(spec, size);
+  const glare = renderGlare(spec.glare, size);
+  const defContent = `${gradientDef}${glare.def}${noise.def}`;
+  const defs = defContent ? `<defs>${defContent}</defs>` : "";
   const rect = `<rect width="${size}" height="${size}" fill="${backgroundFill(spec.background)}"/>`;
 
-  return `<svg${rootAttributes}>${defs}${rect}${renderIconLayer(spec)}${noise.layer}</svg>`;
+  return `<svg${rootAttributes}>${defs}${rect}${renderIconLayer(spec)}${glare.layer}${noise.layer}</svg>`;
 }
 
 /** Download/file name suggestion for a spec, e.g. "bell.svg" or "mdi-home.svg". */
 export function suggestFileName(spec: Pick<IconSpec, "icon">): string {
   if (spec.icon.type === "custom") {
     return "icon.svg";
+  }
+  if (spec.icon.type === "text") {
+    const slug = spec.icon.text.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    return `${slug === "" ? "monogram" : slug}.svg`;
   }
   // Iconify names carry a "prefix:" that filesystems (Windows) reject.
   return `${spec.icon.name.replace(/:/g, "-")}.svg`;

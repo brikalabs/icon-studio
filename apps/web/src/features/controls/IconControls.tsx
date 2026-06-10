@@ -6,7 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@brika/clay/components/select";
-import type { IconSpec } from "@brika/icon-studio-core";
+import { SliderValue } from "@brika/clay/components/slider";
+import { type IconSpec, textFontFamilySchema, textFontWeightSchema } from "@brika/icon-studio-core";
 import {
   AlignCenterHorizontal,
   AlignCenterVertical,
@@ -21,7 +22,12 @@ import { useEditorStore } from "../../state/editor-store";
 import { ColorField } from "./ColorField";
 import { SliderRow } from "./SliderRow";
 
-const CANVAS_SIZES = [64, 128, 256, 512, 1024] as const;
+const CANVAS_SIZES: readonly number[] = [64, 128, 256, 512, 1024];
+const FONT_FAMILY_LABELS: Readonly<Record<string, string>> = {
+  sans: "Sans",
+  serif: "Serif",
+  mono: "Mono",
+};
 
 interface AlignAction {
   readonly id: string;
@@ -85,6 +91,59 @@ export function IconControls() {
         }}
       />
 
+      {spec.icon.type === "text" ? (
+        <>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground text-sm">Font</span>
+            <Select
+              value={spec.icon.fontFamily}
+              onValueChange={(value) => {
+                const parsed = textFontFamilySchema.safeParse(value);
+                if (parsed.success && spec.icon.type === "text") {
+                  markUndoBoundary();
+                  updateSpec({ icon: { ...spec.icon, fontFamily: parsed.data } });
+                }
+              }}
+            >
+              <SelectTrigger size="sm" className="w-32" aria-label="Monogram font family">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {textFontFamilySchema.options.map((family) => (
+                  <SelectItem key={family} value={family}>
+                    {FONT_FAMILY_LABELS[family] ?? family}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground text-sm">Weight</span>
+            <Select
+              value={spec.icon.fontWeight}
+              onValueChange={(value) => {
+                const parsed = textFontWeightSchema.safeParse(value);
+                if (parsed.success && spec.icon.type === "text") {
+                  markUndoBoundary();
+                  updateSpec({ icon: { ...spec.icon, fontWeight: parsed.data } });
+                }
+              }}
+            >
+              <SelectTrigger size="sm" className="w-32" aria-label="Monogram font weight">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {textFontWeightSchema.options.map((weight) => (
+                  <SelectItem key={weight} value={weight}>
+                    {weight}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </>
+      ) : null}
+
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm text-muted-foreground">Align</span>
         <div className="flex gap-1">
@@ -129,7 +188,7 @@ export function IconControls() {
         unit="°"
       />
 
-      {spec.icon.type === "lucide" ? (
+      {spec.icon.type === "lucide" || spec.icon.type === "tabler" || spec.icon.type === "hero" ? (
         <SliderRow
           label="Stroke"
           value={spec.strokeWidth}
@@ -141,24 +200,29 @@ export function IconControls() {
         />
       ) : null}
 
-      <SliderRow
-        label="Offset X"
-        value={spec.offsetX}
-        onChange={(offsetX) => updateSpec({ offsetX })}
-        min={-offsetRange}
-        max={offsetRange}
-        step={1}
-        unit="px"
-      />
-      <SliderRow
-        label="Offset Y"
-        value={spec.offsetY}
-        onChange={(offsetY) => updateSpec({ offsetY })}
-        min={-offsetRange}
-        max={offsetRange}
-        step={1}
-        unit="px"
-      />
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-muted-foreground text-sm">Position</span>
+        <div className="flex items-center gap-1">
+          <SliderValue
+            value={spec.offsetX}
+            onChange={(offsetX) => updateSpec({ offsetX })}
+            min={-offsetRange}
+            max={offsetRange}
+            step={1}
+            unit="px"
+            width="w-16"
+          />
+          <SliderValue
+            value={spec.offsetY}
+            onChange={(offsetY) => updateSpec({ offsetY })}
+            min={-offsetRange}
+            max={offsetRange}
+            step={1}
+            unit="px"
+            width="w-16"
+          />
+        </div>
+      </div>
 
       <Button
         variant="outline"

@@ -1,10 +1,13 @@
+import { iconLibraries } from "@brika/icon-studio-core";
 import { useEffect } from "react";
 import { Header } from "./components/Header";
 import { ControlsPanel } from "./features/controls/ControlsPanel";
 import { CommandPalette } from "./features/palette/CommandPalette";
 import { IconPicker } from "./features/picker/IconPicker";
 import { PreviewCanvas } from "./features/preview/PreviewCanvas";
-import { syncSpecToUrl, useEditorStore } from "./state/editor-store";
+import { SEARCH_INPUT_ID } from "./lib/shortcuts";
+import { copySvg, exportSvg } from "./lib/spec-actions";
+import { previewMaskSchema, syncSpecToUrl, useEditorStore } from "./state/editor-store";
 
 function isEditableTarget(target: EventTarget | null): boolean {
   return (
@@ -27,27 +30,68 @@ export function App() {
     const icon = spec.icon;
     if (icon.type === "iconify") {
       void useEditorStore.getState().loadIconifyIcons([icon.name]);
-    } else if (icon.type !== "custom") {
+    } else if (icon.type !== "custom" && icon.type !== "text") {
       void useEditorStore.getState().loadLibrary(icon.type);
     }
   }, [spec.icon]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || isEditableTarget(event.target)) {
+      const editable = isEditableTarget(event.target);
+      const store = useEditorStore.getState();
+      const key = event.key.toLowerCase();
+
+      if (event.metaKey || event.ctrlKey) {
+        // Export must intercept the browser's save dialog even from inputs.
+        if (key === "s") {
+          event.preventDefault();
+          exportSvg();
+          return;
+        }
+        if (editable) {
+          return;
+        }
+        if (key === "z") {
+          event.preventDefault();
+          if (event.shiftKey) {
+            store.redo();
+          } else {
+            store.undo();
+          }
+        } else if (key === "y") {
+          event.preventDefault();
+          store.redo();
+        } else if (key === "c" && event.shiftKey) {
+          event.preventDefault();
+          void copySvg();
+        }
         return;
       }
-      const { undo, redo } = useEditorStore.getState();
-      if (event.key.toLowerCase() === "z") {
+
+      if (editable) {
+        return;
+      }
+      if (event.key === "/") {
         event.preventDefault();
-        if (event.shiftKey) {
-          redo();
-        } else {
-          undo();
+        const search = document.getElementById(SEARCH_INPUT_ID);
+        if (search instanceof HTMLElement) {
+          search.focus();
         }
-      } else if (event.key.toLowerCase() === "y") {
-        event.preventDefault();
-        redo();
+        return;
+      }
+      if (key === "m") {
+        const order = previewMaskSchema.options;
+        const next = order[(order.indexOf(store.previewMask) + 1) % order.length];
+        if (next) {
+          store.setPreviewMask(next);
+        }
+        return;
+      }
+      const digit = Number.parseInt(event.key, 10);
+      const library = iconLibraries[digit - 1];
+      if (library) {
+        store.setPickerLibrary(library.id);
+        void store.loadLibrary(library.id);
       }
     };
     window.addEventListener("keydown", onKeyDown);

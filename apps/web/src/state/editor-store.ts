@@ -99,7 +99,8 @@ export const useEditorStore = create<EditorState>((set) => ({
   paletteOpen: false,
   setPaletteOpen: (open) => set({ paletteOpen: open }),
   // A shared link opens the picker on the library it points at.
-  pickerLibrary: initial.icon.type === "custom" ? "lucide" : initial.icon.type,
+  pickerLibrary:
+    initial.icon.type === "custom" || initial.icon.type === "text" ? "lucide" : initial.icon.type,
   setPickerLibrary: (library) => set({ pickerLibrary: library }),
   previewMask: "square",
   setPreviewMask: (mask) => set({ previewMask: mask }),

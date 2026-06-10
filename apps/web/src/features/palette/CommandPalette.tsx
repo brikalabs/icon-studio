@@ -30,8 +30,13 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { IconGlyph } from "../../components/IconGlyph";
 import { backgroundToCss } from "../../lib/gradient-css";
-import { randomizeSpec, startFresh } from "../../lib/spec-actions";
-import { useExportActions } from "../../lib/use-export-actions";
+import {
+  copyShareLink,
+  copySvg,
+  exportSvg,
+  randomizeSpec,
+  startFresh,
+} from "../../lib/spec-actions";
 import { useEditorStore } from "../../state/editor-store";
 
 const ICONS_PER_LIBRARY = 4;
@@ -58,7 +63,6 @@ export function CommandPalette() {
   const loadLibrary = useEditorStore((state) => state.loadLibrary);
   const undo = useEditorStore((state) => state.undo);
   const redo = useEditorStore((state) => state.redo);
-  const exportActions = useExportActions();
   const [query, setQuery] = useState("");
   const [iconifyMatches, setIconifyMatches] = useState<readonly string[]>([]);
 
@@ -174,15 +178,15 @@ export function CommandPalette() {
         ) : null}
 
         <CommandGroup heading="Actions">
-          <CommandItem onSelect={() => run(exportActions.download)}>
+          <CommandItem onSelect={() => run(exportSvg)}>
             <Download />
             Export SVG
           </CommandItem>
-          <CommandItem onSelect={() => run(() => void exportActions.copySvg())}>
+          <CommandItem onSelect={() => run(() => void copySvg())}>
             <Copy />
             Copy SVG
           </CommandItem>
-          <CommandItem onSelect={() => run(() => void exportActions.copyLink())}>
+          <CommandItem onSelect={() => run(() => void copyShareLink())}>
             <Link />
             Copy share link
           </CommandItem>

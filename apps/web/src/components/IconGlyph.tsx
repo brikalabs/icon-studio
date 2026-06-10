@@ -21,7 +21,14 @@ interface IconGlyphProps {
 export function IconGlyph({ library, name, size = 20 }: Readonly<IconGlyphProps>) {
   const glyph = getIconGlyph(library, name);
   if (!glyph) {
-    return null;
+    // Not yet fetched (lazy catalogues): a quiet skeleton placeholder.
+    return (
+      <span
+        aria-hidden="true"
+        className="animate-pulse rounded bg-muted"
+        style={{ width: size, height: size }}
+      />
+    );
   }
 
   if (glyph.kind === "body") {

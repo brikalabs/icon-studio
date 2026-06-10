@@ -115,6 +115,28 @@ describe("parseCliArgs", () => {
     expect(command.outFile).toBe("result.svg");
   });
 
+  test("--text builds a monogram icon with font options", () => {
+    const command = parseCliArgs(
+      ["--text", "BR", "--font", "mono", "--weight", "800", "--glare", "0.4", "--noise-scale", "2"],
+      noFile,
+    );
+    expect(command.spec.icon).toEqual({
+      type: "text",
+      text: "BR",
+      fontFamily: "mono",
+      fontWeight: "800",
+    });
+    expect(command.spec.glare).toBe(0.4);
+    expect(command.spec.noiseScale).toBe(2);
+    expect(command.outFile).toBe("br.svg");
+    expect(() => parseCliArgs(["--text", "BR", "--font", "comic"], noFile)).toThrow(
+      "--font expects",
+    );
+    expect(() => parseCliArgs(["--text", "BR", "--weight", "950"], noFile)).toThrow(
+      "--weight expects",
+    );
+  });
+
   test("--custom reads the SVG file", () => {
     const command = parseCliArgs(["--custom", "logo.svg"], (path) => {
       expect(path).toBe("logo.svg");
