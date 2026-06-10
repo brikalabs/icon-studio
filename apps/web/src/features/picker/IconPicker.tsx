@@ -1,7 +1,13 @@
 import { Button } from "@brika/clay/components/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@brika/clay/components/input-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@brika/clay/components/select";
 import { toast } from "@brika/clay/components/toast";
-import { ToggleGroup, ToggleGroupItem } from "@brika/clay/components/toggle-group";
 import {
   getIconGlyph,
   type IconifyCollection,
@@ -143,33 +149,30 @@ export function IconPicker() {
 
   const searchPlaceholder = (() => {
     if (library !== "iconify") {
-      return "Search icons...";
+      return "Search...";
     }
     if (collection) {
       return `Search ${collection.name}...`;
     }
-    return "Search 200,000+ icons...";
+    return "Search all icons...";
   })();
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-col gap-2 p-3 pb-2">
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          className="w-full"
-          value={library}
-          onValueChange={switchLibrary}
-          aria-label="Icon library"
-        >
-          {iconLibraries.map((entry) => (
-            <ToggleGroupItem key={entry.id} value={entry.id} className="flex-1 text-xs">
-              {entry.label}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
         <div className="flex items-center gap-1.5">
+          <Select value={library} onValueChange={switchLibrary}>
+            <SelectTrigger size="sm" className="w-24 shrink-0" aria-label="Icon library">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {iconLibraries.map((entry) => (
+                <SelectItem key={entry.id} value={entry.id}>
+                  {entry.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <InputGroup className="flex-1">
             <InputGroupAddon align="inline-start">
               <Search className="size-3.5 text-muted-foreground" />
