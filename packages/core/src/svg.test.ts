@@ -1,6 +1,9 @@
-import { describe, expect, test } from "bun:test";
+import { beforeAll, describe, expect, test } from "bun:test";
+import { ensureBrandIcons } from "./brands";
 import { buildIconSvg, linearGradientEndpoints, suggestFileName } from "./svg";
 import { createDefaultIconSpec } from "./types";
+
+beforeAll(ensureBrandIcons);
 
 describe("buildIconSvg", () => {
   test("builds a square SVG with a linear gradient by default", () => {
@@ -23,9 +26,37 @@ describe("buildIconSvg", () => {
     expect(svg).not.toContain("<defs>");
   });
 
-  test("radial background renders a centered radial gradient", () => {
-    const svg = buildIconSvg({ background: { type: "radial", from: "#F27121", to: "#8A2387" } });
-    expect(svg).toContain('<radialGradient id="icon-studio-bg" cx="0.5" cy="0.5" r="0.7071">');
+  test("multi-stop gradients render every stop in offset order", () => {
+    const svg = buildIconSvg({
+      background: {
+        type: "linear",
+        angle: 90,
+        stops: [
+          { color: "#FFFFFF", offset: 1 },
+          { color: "#000000", offset: 0 },
+          { color: "#FF0000", offset: 0.25 },
+        ],
+      },
+    });
+    expect(svg).toContain(
+      '<stop offset="0" stop-color="#000000"/><stop offset="0.25" stop-color="#FF0000"/><stop offset="1" stop-color="#FFFFFF"/>',
+    );
+  });
+
+  test("radial background honors center and radius", () => {
+    const svg = buildIconSvg({
+      background: {
+        type: "radial",
+        stops: [
+          { color: "#F27121", offset: 0 },
+          { color: "#8A2387", offset: 1 },
+        ],
+        cx: 0.3,
+        cy: 0.2,
+        radius: 1,
+      },
+    });
+    expect(svg).toContain('<radialGradient id="icon-studio-bg" cx="0.3" cy="0.2" r="1">');
   });
 
   test("icon layer centers, scales, and offsets the lucide glyph", () => {
@@ -42,15 +73,37 @@ describe("buildIconSvg", () => {
     expect(svg).toContain('stroke-width="2"');
   });
 
-  test("stroke width and icon color are configurable", () => {
-    const svg = buildIconSvg({ iconColor: "#FFD200", strokeWidth: 1.5 });
-    expect(svg).toContain('stroke="#FFD200"');
-    expect(svg).toContain('stroke-width="1.5"');
+  test("rotation rotates around the icon center", () => {
+    const svg = buildIconSvg({ rotation: 45 });
+    expect(svg).toContain("rotate(45 12 12)");
   });
 
-  test("unknown lucide icon names throw a clear error", () => {
+  test("brand icons render as a single filled path", () => {
+    const svg = buildIconSvg({ icon: { type: "brand", name: "github" }, iconColor: "#FFD200" });
+    expect(svg).toContain('fill="#FFD200"');
+    expect(svg).not.toContain("stroke-linecap");
+    expect(svg).toContain("<path d=");
+  });
+
+  test("noise adds a turbulence grain layer above the icon", () => {
+    const svg = buildIconSvg({ noise: 0.4 });
+    expect(svg).toContain("<feTurbulence");
+    expect(svg).toContain('opacity="0.2"');
+    const grainAt = svg.indexOf('filter="url(#icon-studio-noise)"');
+    const iconAt = svg.indexOf("<g transform=");
+    expect(grainAt).toBeGreaterThan(iconAt);
+  });
+
+  test("noise 0 leaves the document untouched", () => {
+    expect(buildIconSvg({ noise: 0 })).not.toContain("feTurbulence");
+  });
+
+  test("unknown icon names throw a clear error", () => {
     expect(() => buildIconSvg({ icon: { type: "lucide", name: "not-a-real-icon" } })).toThrow(
       'unknown lucide icon "not-a-real-icon"',
+    );
+    expect(() => buildIconSvg({ icon: { type: "brand", name: "not-a-real-brand" } })).toThrow(
+      'unknown brand icon "not-a-real-brand"',
     );
   });
 
@@ -68,11 +121,14 @@ describe("buildIconSvg", () => {
     expect(svg).toContain('<circle cx="5" cy="5" r="4"/>');
   });
 
-  test("custom SVG without viewBox synthesizes one from width/height", () => {
+  test("custom SVG rotation wraps the embed in a rotated group", () => {
     const svg = buildIconSvg({
-      icon: { type: "custom", svg: '<svg width="32" height="32"><rect/></svg>' },
+      canvasSize: 100,
+      iconScale: 0.5,
+      rotation: 90,
+      icon: { type: "custom", svg: '<svg viewBox="0 0 10 10"><rect width="1"/></svg>' },
     });
-    expect(svg).toContain('viewBox="0 0 32 32"');
+    expect(svg).toContain('<g transform="rotate(90 50 50)">');
   });
 
   test("custom SVG active content is stripped", () => {
@@ -121,8 +177,9 @@ describe("linearGradientEndpoints", () => {
 });
 
 describe("suggestFileName", () => {
-  test("uses the lucide icon name", () => {
+  test("uses the icon name for lucide and brand icons", () => {
     expect(suggestFileName(createDefaultIconSpec())).toBe("bell.svg");
+    expect(suggestFileName({ icon: { type: "brand", name: "github" } })).toBe("github.svg");
   });
 
   test("falls back for custom icons", () => {

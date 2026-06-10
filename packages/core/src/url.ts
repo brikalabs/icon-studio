@@ -1,23 +1,42 @@
+import { backgroundPresets } from "./presets";
 import {
   type Background,
   createDefaultIconSpec,
+  type GradientStop,
   hexColorSchema,
   type IconSpec,
   iconSpecSchema,
 } from "./types";
 
 /**
- * Shareable-URL codec. Lucide-based specs round-trip losslessly; pasted
- * custom SVGs are deliberately not serialized (they would not fit in a URL),
- * so decoding a custom-icon link falls back to the default icon.
+ * Shareable-URL codec, optimized for short links:
+ * - parameters equal to the default spec are omitted entirely;
+ * - a background matching a preset is encoded as `p=<preset-id>`;
+ * - gradient stops pack into one token (`g=3F5EFB-FC466B`), offsets only
+ *   when stops are not evenly spaced (`g=000000_0-FF0000_25-FFFFFF_100`);
+ * - fractions (offsets, scale, noise, radial geometry) quantize to integer
+ *   percent, so encode(decode(url)) is stable.
+ *
+ * A default design therefore serializes to an empty query string, and a
+ * typical link looks like `?i=rocket&p=sunset`. Pasted custom SVGs are
+ * deliberately not serialized (they would not fit in a URL).
+ *
+ * Keys: i icon, b brand icon, p preset, c solid color, g/rg linear/radial
+ * stops, a angle, rc radial center, rr radial radius, sz canvas, ic icon
+ * color, sc scale, x/y offset, ro rotation, sw stroke width, n noise.
  */
 
-function writeColor(params: URLSearchParams, key: string, color: string): void {
-  params.set(key, color.replace(/^#/, ""));
+const PERCENT = 100;
+
+function percent(fraction: number): string {
+  return String(Math.round(fraction * PERCENT));
 }
 
-function readColor(params: URLSearchParams, key: string): string | undefined {
-  const raw = params.get(key);
+function color(value: string): string {
+  return value.replace(/^#/, "");
+}
+
+function readColor(raw: string | null): string | undefined {
   if (raw === null) {
     return undefined;
   }
@@ -25,8 +44,7 @@ function readColor(params: URLSearchParams, key: string): string | undefined {
   return parsed.success ? parsed.data : undefined;
 }
 
-function readNumber(params: URLSearchParams, key: string): number | undefined {
-  const raw = params.get(key);
+function readNumber(raw: string | null): number | undefined {
   if (raw === null) {
     return undefined;
   }
@@ -34,62 +52,164 @@ function readNumber(params: URLSearchParams, key: string): number | undefined {
   return Number.isFinite(value) ? value : undefined;
 }
 
-export function specToSearchParams(spec: IconSpec): URLSearchParams {
-  const params = new URLSearchParams();
-  if (spec.icon.type === "lucide") {
-    params.set("icon", spec.icon.name);
+function isEvenlySpaced(stops: readonly GradientStop[]): boolean {
+  const last = stops.length - 1;
+  return stops.every(
+    (stop, index) => Math.round(stop.offset * PERCENT) === Math.round((index / last) * PERCENT),
+  );
+}
+
+function writeStops(stops: readonly GradientStop[]): string {
+  const sorted = [...stops].sort((a, b) => a.offset - b.offset);
+  if (isEvenlySpaced(sorted)) {
+    return sorted.map((stop) => color(stop.color)).join("-");
   }
-  params.set("size", String(spec.canvasSize));
-  params.set("bg", spec.background.type);
-  if (spec.background.type === "solid") {
-    writeColor(params, "c", spec.background.color);
-  } else {
-    writeColor(params, "from", spec.background.from);
-    writeColor(params, "to", spec.background.to);
-    if (spec.background.type === "linear") {
-      params.set("angle", String(spec.background.angle));
+  return sorted.map((stop) => `${color(stop.color)}_${percent(stop.offset)}`).join("-");
+}
+
+function readStops(raw: string): GradientStop[] | undefined {
+  const parts = raw.split("-");
+  if (parts.length < 2) {
+    return undefined;
+  }
+  const stops: GradientStop[] = [];
+  for (const [index, part] of parts.entries()) {
+    const [hex, offsetRaw] = part.split("_");
+    const stopColor = readColor(hex ?? null);
+    const explicit = offsetRaw === undefined ? undefined : readNumber(offsetRaw);
+    if (offsetRaw !== undefined && explicit === undefined) {
+      return undefined;
     }
+    const offset = explicit === undefined ? index / (parts.length - 1) : explicit / PERCENT;
+    if (!stopColor || offset < 0 || offset > 1) {
+      return undefined;
+    }
+    stops.push({ color: stopColor, offset });
   }
-  writeColor(params, "ic", spec.iconColor);
-  params.set("scale", String(spec.iconScale));
-  params.set("x", String(spec.offsetX));
-  params.set("y", String(spec.offsetY));
-  params.set("sw", String(spec.strokeWidth));
-  return params;
+  return stops;
+}
+
+function sameBackground(a: Background, b: Background): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function writeBackground(params: URLSearchParams, background: Background): void {
+  const preset = backgroundPresets.find((entry) => sameBackground(entry.background, background));
+  if (preset) {
+    params.set("p", preset.id);
+    return;
+  }
+  switch (background.type) {
+    case "solid":
+      params.set("c", color(background.color));
+      return;
+    case "linear":
+      params.set("g", writeStops(background.stops));
+      if (background.angle !== 45) {
+        params.set("a", String(Math.round(background.angle)));
+      }
+      return;
+    case "radial":
+      params.set("rg", writeStops(background.stops));
+      if (background.cx !== 0.5 || background.cy !== 0.5) {
+        params.set("rc", `${percent(background.cx)}_${percent(background.cy)}`);
+      }
+      if (Math.round(background.radius * PERCENT) !== 71) {
+        params.set("rr", percent(background.radius));
+      }
+  }
 }
 
 function readBackground(params: URLSearchParams, fallback: Background): Background {
-  const type = params.get("bg");
-  if (type === "solid") {
-    const color = readColor(params, "c");
-    return color ? { type: "solid", color } : fallback;
+  const preset = params.get("p");
+  if (preset !== null) {
+    const match = backgroundPresets.find((entry) => entry.id === preset);
+    return match ? match.background : fallback;
   }
-  if (type === "linear" || type === "radial") {
-    const from = readColor(params, "from");
-    const to = readColor(params, "to");
-    if (!from || !to) {
+  const solid = readColor(params.get("c"));
+  if (solid) {
+    return { type: "solid", color: solid };
+  }
+  const linearStops = params.get("g");
+  if (linearStops !== null) {
+    const stops = readStops(linearStops);
+    return stops ? { type: "linear", stops, angle: readNumber(params.get("a")) ?? 45 } : fallback;
+  }
+  const radialStops = params.get("rg");
+  if (radialStops !== null) {
+    const stops = readStops(radialStops);
+    if (!stops) {
       return fallback;
     }
-    if (type === "radial") {
-      return { type: "radial", from, to };
-    }
-    return { type: "linear", from, to, angle: readNumber(params, "angle") ?? 45 };
+    const [cx, cy] = (params.get("rc") ?? "50_50").split("_").map((part) => readNumber(part));
+    return {
+      type: "radial",
+      stops,
+      cx: (cx ?? 50) / PERCENT,
+      cy: (cy ?? 50) / PERCENT,
+      radius: (readNumber(params.get("rr")) ?? 71) / PERCENT,
+    };
   }
   return fallback;
+}
+
+export function specToSearchParams(spec: IconSpec): URLSearchParams {
+  const defaults = createDefaultIconSpec();
+  const params = new URLSearchParams();
+
+  if (spec.icon.type === "brand") {
+    params.set("b", spec.icon.name);
+  } else if (spec.icon.type === "lucide" && spec.icon.name !== "bell") {
+    params.set("i", spec.icon.name);
+  }
+  if (!sameBackground(spec.background, defaults.background)) {
+    writeBackground(params, spec.background);
+  }
+  if (spec.canvasSize !== defaults.canvasSize) {
+    params.set("sz", String(spec.canvasSize));
+  }
+  if (spec.iconColor !== defaults.iconColor) {
+    params.set("ic", color(spec.iconColor));
+  }
+  if (spec.iconScale !== defaults.iconScale) {
+    params.set("sc", percent(spec.iconScale));
+  }
+  if (spec.offsetX !== 0) {
+    params.set("x", String(Math.round(spec.offsetX)));
+  }
+  if (spec.offsetY !== 0) {
+    params.set("y", String(Math.round(spec.offsetY)));
+  }
+  if (spec.rotation !== 0) {
+    params.set("ro", String(Math.round(spec.rotation)));
+  }
+  if (spec.strokeWidth !== defaults.strokeWidth) {
+    params.set("sw", String(spec.strokeWidth));
+  }
+  if (spec.noise !== 0) {
+    params.set("n", percent(spec.noise));
+  }
+  return params;
 }
 
 /** Tolerant decode: anything missing or malformed falls back to defaults. */
 export function specFromSearchParams(params: URLSearchParams): IconSpec {
   const defaults = createDefaultIconSpec();
+  const brand = params.get("b");
   const candidate: IconSpec = {
-    canvasSize: readNumber(params, "size") ?? defaults.canvasSize,
+    canvasSize: readNumber(params.get("sz")) ?? defaults.canvasSize,
     background: readBackground(params, defaults.background),
-    icon: { type: "lucide", name: params.get("icon") ?? "bell" },
-    iconColor: readColor(params, "ic") ?? defaults.iconColor,
-    iconScale: readNumber(params, "scale") ?? defaults.iconScale,
-    offsetX: readNumber(params, "x") ?? defaults.offsetX,
-    offsetY: readNumber(params, "y") ?? defaults.offsetY,
-    strokeWidth: readNumber(params, "sw") ?? defaults.strokeWidth,
+    icon:
+      brand !== null
+        ? { type: "brand", name: brand }
+        : { type: "lucide", name: params.get("i") ?? "bell" },
+    iconColor: readColor(params.get("ic")) ?? defaults.iconColor,
+    iconScale: (readNumber(params.get("sc")) ?? defaults.iconScale * PERCENT) / PERCENT,
+    offsetX: readNumber(params.get("x")) ?? 0,
+    offsetY: readNumber(params.get("y")) ?? 0,
+    rotation: readNumber(params.get("ro")) ?? 0,
+    strokeWidth: readNumber(params.get("sw")) ?? defaults.strokeWidth,
+    noise: (readNumber(params.get("n")) ?? 0) / PERCENT,
   };
   const parsed = iconSpecSchema.safeParse(candidate);
   return parsed.success ? parsed.data : defaults;

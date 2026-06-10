@@ -1,6 +1,8 @@
-import { describe, expect, test } from "bun:test";
-import { searchLucideIcons } from "@brika/icon-studio-core";
+import { beforeAll, describe, expect, test } from "bun:test";
+import { ensureBrandIcons, searchIcons } from "@brika/icon-studio-core";
 import { parseCliArgs } from "./args";
+
+beforeAll(ensureBrandIcons);
 
 const noFile = (): string => {
   throw new Error("no file access expected");
@@ -14,34 +16,54 @@ describe("parseCliArgs", () => {
     expect(command.outFile).toBe("bell.svg");
   });
 
+  test("--lib brand selects the simple-icons library", () => {
+    const command = parseCliArgs(["github", "--lib", "brand"], noFile);
+    expect(command.spec.icon).toEqual({ type: "brand", name: "github" });
+    expect(command.outFile).toBe("github.svg");
+  });
+
   test("applies a preset background", () => {
     const command = parseCliArgs(["bell", "--preset", "sunset"], noFile);
     expect(command.spec.background).toEqual({
       type: "linear",
-      from: "#FF512F",
-      to: "#F09819",
+      stops: [
+        { color: "#FF512F", offset: 0 },
+        { color: "#F09819", offset: 1 },
+      ],
       angle: 45,
     });
   });
 
-  test("builds a custom gradient with angle", () => {
+  test("builds a two-stop gradient from --from/--to with angle", () => {
     const command = parseCliArgs(
       ["rocket", "--from", "#3F5EFB", "--to", "#FC466B", "--angle", "120"],
       noFile,
     );
     expect(command.spec.background).toEqual({
       type: "linear",
-      from: "#3F5EFB",
-      to: "#FC466B",
+      stops: [
+        { color: "#3F5EFB", offset: 0 },
+        { color: "#FC466B", offset: 1 },
+      ],
       angle: 120,
     });
   });
 
+  test("--stops builds multi-stop gradients with explicit offsets", () => {
+    const command = parseCliArgs(["bell", "--stops", "000000_0-FF0000_25-FFFFFF_100"], noFile);
+    expect(command.spec.background).toEqual({
+      type: "linear",
+      stops: [
+        { color: "#000000", offset: 0 },
+        { color: "#FF0000", offset: 0.25 },
+        { color: "#FFFFFF", offset: 1 },
+      ],
+      angle: 45,
+    });
+  });
+
   test("--radial switches gradient type", () => {
-    const command = parseCliArgs(
-      ["rocket", "--from", "#3F5EFB", "--to", "#FC466B", "--radial"],
-      noFile,
-    );
+    const command = parseCliArgs(["rocket", "--stops", "3F5EFB-FC466B", "--radial"], noFile);
     expect(command.spec.background.type).toBe("radial");
   });
 
@@ -50,7 +72,7 @@ describe("parseCliArgs", () => {
     expect(command.spec.background).toEqual({ type: "solid", color: "#18181B" });
   });
 
-  test("size, scale, offsets, stroke, color, and out are honored", () => {
+  test("size, scale, offsets, rotation, stroke, noise, color, and out are honored", () => {
     const command = parseCliArgs(
       [
         "bell",
@@ -61,8 +83,12 @@ describe("parseCliArgs", () => {
         "--x",
         "10",
         "--y=-5",
+        "--rotate",
+        "30",
         "--stroke",
         "1.5",
+        "--noise",
+        "0.2",
         "--icon-color",
         "#FFD200",
         "-o",
@@ -74,7 +100,9 @@ describe("parseCliArgs", () => {
     expect(command.spec.iconScale).toBe(0.4);
     expect(command.spec.offsetX).toBe(10);
     expect(command.spec.offsetY).toBe(-5);
+    expect(command.spec.rotation).toBe(30);
     expect(command.spec.strokeWidth).toBe(1.5);
+    expect(command.spec.noise).toBe(0.2);
     expect(command.spec.iconColor).toBe("#FFD200");
     expect(command.outFile).toBe("result.svg");
   });
@@ -94,30 +122,27 @@ describe("parseCliArgs", () => {
     const search = parseCliArgs(["--search", "alarm"], noFile);
     expect(search.kind).toBe("search");
     expect(search.query).toBe("alarm");
+    expect(parseCliArgs(["--search", "git", "--lib", "brand"], noFile).library).toBe("brand");
   });
 
-  test("rejects missing icon name, bad colors, unknown presets, lone --from", () => {
+  test("rejects bad input with clear errors", () => {
     expect(() => parseCliArgs([], noFile)).toThrow("missing icon name");
     expect(() => parseCliArgs(["bell", "--bg", "red"], noFile)).toThrow("hex color");
     expect(() => parseCliArgs(["bell", "--preset", "nope"], noFile)).toThrow("unknown preset");
+    expect(() => parseCliArgs(["bell", "--lib", "nope"], noFile)).toThrow("--lib expects");
+    expect(() => parseCliArgs(["bell", "--stops", "3F5EFB"], noFile)).toThrow("at least two");
     expect(() => parseCliArgs(["bell", "--from", "#FFFFFF"], noFile)).toThrow(
       "--from and --to must be used together",
     );
   });
 });
 
-describe("searchLucideIcons", () => {
-  test("matches names and ranks prefixes first", () => {
-    const results = searchLucideIcons("bell", 25);
-    expect(results[0]).toBe("bell");
-    expect(results).toContain("bell-off");
+describe("searchIcons via CLI contract", () => {
+  test("lucide search ranks prefixes first", () => {
+    expect(searchIcons("lucide", "bell", 25)[0]).toBe("bell");
   });
 
-  test("matches tags", () => {
-    expect(searchLucideIcons("alarm", 25).length).toBeGreaterThan(0);
-  });
-
-  test("empty query returns the full catalogue", () => {
-    expect(searchLucideIcons("  ").length).toBeGreaterThan(1500);
+  test("brand search finds slugs", () => {
+    expect(searchIcons("brand", "spotify", 25)).toContain("spotify");
   });
 });

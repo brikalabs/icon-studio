@@ -1,25 +1,30 @@
 import { Button } from "@brika/clay/components/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@brika/clay/components/input-group";
+import { ToggleGroup, ToggleGroupItem } from "@brika/clay/components/toggle-group";
 import { cn } from "@brika/clay/primitives";
-import { searchLucideIcons } from "@brika/icon-studio-core";
+import { type IconLibraryId, iconLibraries, searchIcons } from "@brika/icon-studio-core";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search, Shuffle } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-import { LucideGlyph } from "../../components/LucideGlyph";
+import { IconGlyph } from "../../components/IconGlyph";
 import { useEditorStore } from "../../state/editor-store";
-import { CustomSvgDialog } from "./CustomSvgDialog";
+import { CustomSvgDropzone } from "./CustomSvgDropzone";
 
 const COLUMNS = 4;
 const ROW_HEIGHT = 64;
 
 export function IconPicker() {
   const [query, setQuery] = useState("");
+  const [library, setLibrary] = useState<IconLibraryId>("lucide");
   const spec = useEditorStore((state) => state.spec);
   const updateSpec = useEditorStore((state) => state.updateSpec);
   const markUndoBoundary = useEditorStore((state) => state.markUndoBoundary);
+  const brandsReady = useEditorStore((state) => state.brandsReady);
+  const loadBrands = useEditorStore((state) => state.loadBrands);
 
-  const names = useMemo(() => searchLucideIcons(query), [query]);
-  const selectedName = spec.icon.type === "lucide" ? spec.icon.name : null;
+  // biome-ignore lint/correctness/useExhaustiveDependencies(brandsReady): the catalogue lives outside React; brandsReady flipping is what makes searchIcons return brand results
+  const names = useMemo(() => searchIcons(library, query), [library, query, brandsReady]);
+  const selectedName = spec.icon.type === library ? spec.icon.name : null;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
@@ -31,7 +36,7 @@ export function IconPicker() {
 
   const pickIcon = (name: string) => {
     markUndoBoundary();
-    updateSpec({ icon: { type: "lucide", name } });
+    updateSpec({ icon: { type: library, name } });
   };
 
   const pickRandom = () => {
@@ -41,35 +46,64 @@ export function IconPicker() {
     }
   };
 
+  const switchLibrary = (next: string) => {
+    if (next === "lucide" || next === "brand") {
+      setLibrary(next);
+      if (next === "brand") {
+        void loadBrands();
+      }
+      virtualizer.scrollToIndex(0);
+    }
+  };
+
+  const loadingBrands = library === "brand" && !brandsReady;
+
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 p-3">
-        <InputGroup>
-          <InputGroupAddon align="inline-start">
-            <Search className="size-4 text-muted-foreground" />
-          </InputGroupAddon>
-          <InputGroupInput
-            type="search"
-            placeholder="Search icons..."
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            aria-label="Search icons"
-          />
-        </InputGroup>
-        <Button
+      <div className="flex flex-col gap-2 p-3">
+        <ToggleGroup
+          type="single"
           variant="outline"
-          size="icon"
-          onClick={pickRandom}
-          aria-label="Pick a random icon"
-          title="Random icon"
+          size="sm"
+          className="w-full"
+          value={library}
+          onValueChange={switchLibrary}
+          aria-label="Icon library"
         >
-          <Shuffle />
-        </Button>
+          {iconLibraries.map((entry) => (
+            <ToggleGroupItem key={entry.id} value={entry.id} className="flex-1">
+              {entry.label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+        <div className="flex items-center gap-2">
+          <InputGroup>
+            <InputGroupAddon align="inline-start">
+              <Search className="size-4 text-muted-foreground" />
+            </InputGroupAddon>
+            <InputGroupInput
+              type="search"
+              placeholder="Search icons..."
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              aria-label="Search icons"
+            />
+          </InputGroup>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={pickRandom}
+            aria-label="Pick a random icon"
+            title="Random icon"
+          >
+            <Shuffle />
+          </Button>
+        </div>
       </div>
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
         {names.length === 0 ? (
           <p className="px-1 py-8 text-center text-sm text-muted-foreground">
-            No icons match "{query}"
+            {loadingBrands ? "Loading brand icons..." : `No icons match "${query}"`}
           </p>
         ) : (
           <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
@@ -94,7 +128,7 @@ export function IconPicker() {
                         : "border-transparent bg-card hover:border-border hover:text-foreground",
                     )}
                   >
-                    <LucideGlyph name={name} />
+                    <IconGlyph library={library} name={name} />
                   </button>
                 ))}
               </div>
@@ -103,7 +137,7 @@ export function IconPicker() {
         )}
       </div>
       <div className="border-t p-3">
-        <CustomSvgDialog />
+        <CustomSvgDropzone />
       </div>
     </div>
   );

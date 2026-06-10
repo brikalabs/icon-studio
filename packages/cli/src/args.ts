@@ -1,9 +1,12 @@
 import { parseArgs } from "node:util";
 import {
   type Background,
+  COVER_RADIUS,
   createDefaultIconSpec,
+  type GradientStop,
   getBackgroundPreset,
   hexColorSchema,
+  type IconLibraryId,
   type IconSpec,
   iconSpecSchema,
   suggestFileName,
@@ -14,37 +17,43 @@ export interface CliCommand {
   readonly spec: IconSpec;
   readonly outFile: string;
   readonly query: string;
+  readonly library: IconLibraryId;
 }
 
 export const HELP_TEXT = `brika-icon, generate square SVG icons for Brika plugins
 
 Usage
-  brika-icon <lucide-icon> [options]
+  brika-icon <icon-name> [options]
   brika-icon --custom <file.svg> [options]
-  brika-icon --search <query>
+  brika-icon --search <query> [--lib brand]
   brika-icon --list-presets
 
 Options
   -o, --out <file>        output path (default: <icon>.svg)
   -s, --size <px>         canvas edge in pixels (default: 512)
+      --lib <id>          icon library: lucide (default) or brand (simple-icons)
   -p, --preset <id>       background preset (see --list-presets)
       --bg <color>        solid background color, e.g. "#18181B"
-      --from <color>      gradient start color
-      --to <color>        gradient end color
+      --from <color>      gradient start color (with --to)
+      --to <color>        gradient end color (with --from)
+      --stops <list>      multi-stop gradient: "3F5EFB-FC466B" or "000000_0-FF0000_25-FFFFFF_100"
       --angle <deg>       linear gradient angle (default: 45)
-      --radial            use a radial gradient instead of linear
+      --radial            radial gradient instead of linear
       --icon-color <c>    icon color (default: #FFFFFF)
       --scale <0..1.5>    icon size as a fraction of the canvas (default: 0.55)
       --x <px>            horizontal icon offset from center (use --x=-10 for negatives)
       --y <px>            vertical icon offset from center (use --y=-10 for negatives)
+      --rotate <deg>      icon rotation around its center (default: 0)
       --stroke <width>    lucide stroke width (default: 2)
-      --custom <file>     embed a custom SVG file instead of a lucide icon
+      --noise <0..1>      film-grain overlay strength (default: 0)
+      --custom <file>     embed a custom SVG file instead of a library icon
   -h, --help              show this help
 
 Examples
   brika-icon bell --preset sunset -o assets/icon.svg
-  brika-icon rocket --from "#3F5EFB" --to "#FC466B" --angle 45 --scale 0.5
-  brika-icon database --bg "#18181B" --icon-color "#38EF7D"
+  brika-icon rocket --stops "3F5EFB-FC466B" --angle 45 --rotate 15 --noise 0.2
+  brika-icon github --lib brand --bg "#18181B"
+  brika-icon --search alarm
 `;
 
 function parseColor(flag: string, value: string): string {
@@ -55,7 +64,10 @@ function parseColor(flag: string, value: string): string {
   return parsed.data;
 }
 
-function parseNumberFlag(flag: string, value: string): number {
+function parseNumberFlag(flag: string, value: string | undefined, fallback: number): number {
+  if (value === undefined) {
+    return fallback;
+  }
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     throw new Error(`--${flag} expects a number, got "${value}"`);
@@ -63,11 +75,30 @@ function parseNumberFlag(flag: string, value: string): number {
   return parsed;
 }
 
+/** Same packed format as share URLs: "RRGGBB-RRGGBB" or "RRGGBB_0-RRGGBB_100". */
+function parseStops(raw: string): GradientStop[] {
+  const parts = raw.split("-");
+  if (parts.length < 2) {
+    throw new Error(`--stops expects at least two colors, e.g. "3F5EFB-FC466B"`);
+  }
+  return parts.map((part, index) => {
+    const [hex, offset] = part.split("_");
+    return {
+      color: parseColor("stops", `#${hex}`),
+      offset:
+        offset === undefined
+          ? index / (parts.length - 1)
+          : parseNumberFlag("stops", offset, 0) / 100,
+    };
+  });
+}
+
 interface BackgroundFlags {
   readonly preset?: string;
   readonly bg?: string;
   readonly from?: string;
   readonly to?: string;
+  readonly stops?: string;
   readonly angle?: string;
   readonly radial: boolean;
 }
@@ -83,19 +114,26 @@ function resolveBackground(flags: BackgroundFlags, fallback: Background): Backgr
   if (flags.bg !== undefined) {
     return { type: "solid", color: parseColor("bg", flags.bg) };
   }
-  if (flags.from !== undefined || flags.to !== undefined) {
+
+  let stops: GradientStop[] | undefined;
+  if (flags.stops !== undefined) {
+    stops = parseStops(flags.stops);
+  } else if (flags.from !== undefined || flags.to !== undefined) {
     if (flags.from === undefined || flags.to === undefined) {
       throw new Error("--from and --to must be used together");
     }
-    const from = parseColor("from", flags.from);
-    const to = parseColor("to", flags.to);
-    if (flags.radial) {
-      return { type: "radial", from, to };
-    }
-    const angle = flags.angle === undefined ? 45 : parseNumberFlag("angle", flags.angle);
-    return { type: "linear", from, to, angle };
+    stops = [
+      { color: parseColor("from", flags.from), offset: 0 },
+      { color: parseColor("to", flags.to), offset: 1 },
+    ];
   }
-  return fallback;
+  if (stops === undefined) {
+    return fallback;
+  }
+  if (flags.radial) {
+    return { type: "radial", stops, cx: 0.5, cy: 0.5, radius: COVER_RADIUS };
+  }
+  return { type: "linear", stops, angle: parseNumberFlag("angle", flags.angle, 45) };
 }
 
 /** Parses argv (without the runtime prefix) into an executable command. */
@@ -109,17 +147,21 @@ export function parseCliArgs(
     options: {
       out: { type: "string", short: "o" },
       size: { type: "string", short: "s" },
+      lib: { type: "string", default: "lucide" },
       preset: { type: "string", short: "p" },
       bg: { type: "string" },
       from: { type: "string" },
       to: { type: "string" },
+      stops: { type: "string" },
       angle: { type: "string" },
       radial: { type: "boolean", default: false },
       "icon-color": { type: "string" },
       scale: { type: "string" },
       x: { type: "string" },
       y: { type: "string" },
+      rotate: { type: "string" },
       stroke: { type: "string" },
+      noise: { type: "string" },
       custom: { type: "string" },
       search: { type: "string" },
       "list-presets": { type: "boolean", default: false },
@@ -127,22 +169,26 @@ export function parseCliArgs(
     },
   });
 
+  if (values.lib !== "lucide" && values.lib !== "brand") {
+    throw new Error(`--lib expects "lucide" or "brand", got "${values.lib}"`);
+  }
   const defaults = createDefaultIconSpec();
-  const command: CliCommand = {
+  const base: CliCommand = {
     kind: "generate",
     spec: defaults,
     outFile: "",
     query: values.search ?? "",
+    library: values.lib,
   };
 
   if (values.help) {
-    return { ...command, kind: "help" };
+    return { ...base, kind: "help" };
   }
   if (values["list-presets"]) {
-    return { ...command, kind: "list-presets" };
+    return { ...base, kind: "list-presets" };
   }
   if (values.search !== undefined) {
-    return { ...command, kind: "search" };
+    return { ...base, kind: "search" };
   }
 
   const iconName = positionals[0];
@@ -151,28 +197,23 @@ export function parseCliArgs(
   }
 
   const spec = iconSpecSchema.parse({
-    canvasSize:
-      values.size === undefined ? defaults.canvasSize : parseNumberFlag("size", values.size),
+    canvasSize: parseNumberFlag("size", values.size, defaults.canvasSize),
     background: resolveBackground(values, defaults.background),
     icon:
       values.custom !== undefined
         ? { type: "custom", svg: readFile(values.custom) }
-        : { type: "lucide", name: iconName ?? "bell" },
+        : { type: values.lib, name: iconName ?? "bell" },
     iconColor:
       values["icon-color"] === undefined
         ? defaults.iconColor
         : parseColor("icon-color", values["icon-color"]),
-    iconScale:
-      values.scale === undefined ? defaults.iconScale : parseNumberFlag("scale", values.scale),
-    offsetX: values.x === undefined ? defaults.offsetX : parseNumberFlag("x", values.x),
-    offsetY: values.y === undefined ? defaults.offsetY : parseNumberFlag("y", values.y),
-    strokeWidth:
-      values.stroke === undefined ? defaults.strokeWidth : parseNumberFlag("stroke", values.stroke),
+    iconScale: parseNumberFlag("scale", values.scale, defaults.iconScale),
+    offsetX: parseNumberFlag("x", values.x, 0),
+    offsetY: parseNumberFlag("y", values.y, 0),
+    rotation: parseNumberFlag("rotate", values.rotate, 0),
+    strokeWidth: parseNumberFlag("stroke", values.stroke, defaults.strokeWidth),
+    noise: parseNumberFlag("noise", values.noise, 0),
   });
 
-  return {
-    ...command,
-    spec,
-    outFile: values.out ?? suggestFileName(spec),
-  };
+  return { ...base, spec, outFile: values.out ?? suggestFileName(spec) };
 }

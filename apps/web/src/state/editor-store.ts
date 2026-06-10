@@ -1,5 +1,6 @@
 import {
   createDefaultIconSpec,
+  ensureBrandIcons,
   type IconSpec,
   specFromSearchParams,
   specToSearchParams,
@@ -15,6 +16,10 @@ interface EditorState {
   spec: IconSpec;
   /** User-chosen file name; null derives it from the current icon. */
   fileName: string | null;
+  /** Whether the icon layer is selected, which shows the transform handles. */
+  selected: boolean;
+  /** True once the lazy simple-icons catalogue has loaded. */
+  brandsReady: boolean;
   past: IconSpec[];
   future: IconSpec[];
   lastEditAt: number;
@@ -22,6 +27,9 @@ interface EditorState {
   /** Forces the next updateSpec to start a fresh undo step (drag start). */
   markUndoBoundary: () => void;
   setFileName: (name: string | null) => void;
+  setSelected: (selected: boolean) => void;
+  /** Loads the brand catalogue chunk; safe to call repeatedly. */
+  loadBrands: () => Promise<void>;
   undo: () => void;
   redo: () => void;
 }
@@ -36,6 +44,8 @@ function initialSpec(): IconSpec {
 export const useEditorStore = create<EditorState>((set) => ({
   spec: initialSpec(),
   fileName: null,
+  selected: false,
+  brandsReady: false,
   past: [],
   future: [],
   lastEditAt: 0,
@@ -53,6 +63,11 @@ export const useEditorStore = create<EditorState>((set) => ({
     }),
   markUndoBoundary: () => set({ lastEditAt: 0 }),
   setFileName: (name) => set({ fileName: name }),
+  setSelected: (selected) => set({ selected }),
+  loadBrands: async () => {
+    await ensureBrandIcons();
+    set({ brandsReady: true });
+  },
   undo: () =>
     set((state) => {
       const previous = state.past.at(-1);
@@ -95,6 +110,7 @@ export function useFileName(): string {
 
 /** Mirrors the current spec into the address bar so every state is a share link. */
 export function syncSpecToUrl(spec: IconSpec): void {
-  const params = specToSearchParams(spec);
-  window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+  const query = specToSearchParams(spec).toString();
+  const url = query === "" ? window.location.pathname : `${window.location.pathname}?${query}`;
+  window.history.replaceState(null, "", url);
 }

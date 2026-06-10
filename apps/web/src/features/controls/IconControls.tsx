@@ -6,41 +6,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@brika/clay/components/select";
-import { Slider, SliderValue } from "@brika/clay/components/slider";
 import type { IconSpec } from "@brika/icon-studio-core";
-import { Crosshair } from "lucide-react";
+import {
+  AlignCenterHorizontal,
+  AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignStartHorizontal,
+  AlignStartVertical,
+  Crosshair,
+  type LucideIcon,
+} from "lucide-react";
 import { useEditorStore } from "../../state/editor-store";
 import { ColorField } from "./ColorField";
+import { SliderRow } from "./SliderRow";
 
 const CANVAS_SIZES = [64, 128, 256, 512, 1024] as const;
 
-interface SliderRowProps {
-  readonly label: string;
-  readonly value: number;
-  readonly onChange: (next: number) => void;
-  readonly min: number;
-  readonly max: number;
-  readonly step: number;
-  readonly unit?: string;
-  readonly decimals?: number;
+interface AlignAction {
+  readonly id: string;
+  readonly icon: LucideIcon;
+  /** -1 start, 0 center, 1 end; null leaves the axis untouched. */
+  readonly x: number | null;
+  readonly y: number | null;
 }
 
-function SliderRow({ label, ...slider }: Readonly<SliderRowProps>) {
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-muted-foreground">{label}</span>
-        <SliderValue width="w-14" {...slider} />
-      </div>
-      <Slider
-        value={slider.value}
-        onChange={slider.onChange}
-        min={slider.min}
-        max={slider.max}
-        step={slider.step}
-      />
-    </div>
-  );
+const ALIGN_ACTIONS: readonly AlignAction[] = [
+  { id: "Align left", icon: AlignStartVertical, x: -1, y: null },
+  { id: "Center horizontally", icon: AlignCenterVertical, x: 0, y: null },
+  { id: "Align right", icon: AlignEndVertical, x: 1, y: null },
+  { id: "Align top", icon: AlignStartHorizontal, x: null, y: -1 },
+  { id: "Center vertically", icon: AlignCenterHorizontal, x: null, y: 0 },
+  { id: "Align bottom", icon: AlignEndHorizontal, x: null, y: 1 },
+];
+
+/** Offset that puts the icon box flush to an edge (-1/1) or centered (0). */
+function alignOffset(spec: IconSpec, position: number): number {
+  const margin = (spec.canvasSize - spec.canvasSize * spec.iconScale) / 2;
+  return Math.round(position * margin);
 }
 
 export function IconControls() {
@@ -48,8 +51,6 @@ export function IconControls() {
   const updateSpec = useEditorStore((state) => state.updateSpec);
   const markUndoBoundary = useEditorStore((state) => state.markUndoBoundary);
   const offsetRange = Math.round(spec.canvasSize / 2);
-
-  const update = (partial: Partial<IconSpec>) => updateSpec(partial);
 
   return (
     <div className="flex flex-col gap-3">
@@ -59,7 +60,7 @@ export function IconControls() {
           value={String(spec.canvasSize)}
           onValueChange={(value) => {
             markUndoBoundary();
-            update({ canvasSize: Number(value), offsetX: 0, offsetY: 0 });
+            updateSpec({ canvasSize: Number(value), offsetX: 0, offsetY: 0 });
           }}
         >
           <SelectTrigger size="sm" className="w-32" aria-label="Canvas size">
@@ -80,25 +81,59 @@ export function IconControls() {
         value={spec.iconColor}
         onChange={(iconColor) => {
           markUndoBoundary();
-          update({ iconColor });
+          updateSpec({ iconColor });
         }}
       />
+
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm text-muted-foreground">Align</span>
+        <div className="flex gap-1">
+          {ALIGN_ACTIONS.map((action) => (
+            <Button
+              key={action.id}
+              variant="ghost"
+              size="icon-xs"
+              aria-label={action.id}
+              title={action.id}
+              onClick={() => {
+                markUndoBoundary();
+                updateSpec({
+                  ...(action.x === null ? {} : { offsetX: alignOffset(spec, action.x) }),
+                  ...(action.y === null ? {} : { offsetY: alignOffset(spec, action.y) }),
+                });
+              }}
+            >
+              <action.icon />
+            </Button>
+          ))}
+        </div>
+      </div>
 
       <SliderRow
         label="Size"
         value={Math.round(spec.iconScale * 100)}
-        onChange={(percent) => update({ iconScale: percent / 100 })}
+        onChange={(percent) => updateSpec({ iconScale: percent / 100 })}
         min={5}
         max={150}
         step={1}
         unit="%"
       />
 
+      <SliderRow
+        label="Rotation"
+        value={Math.round(spec.rotation)}
+        onChange={(rotation) => updateSpec({ rotation })}
+        min={0}
+        max={360}
+        step={1}
+        unit="°"
+      />
+
       {spec.icon.type === "lucide" ? (
         <SliderRow
           label="Stroke"
           value={spec.strokeWidth}
-          onChange={(strokeWidth) => update({ strokeWidth })}
+          onChange={(strokeWidth) => updateSpec({ strokeWidth })}
           min={0.25}
           max={6}
           step={0.25}
@@ -109,7 +144,7 @@ export function IconControls() {
       <SliderRow
         label="Offset X"
         value={spec.offsetX}
-        onChange={(offsetX) => update({ offsetX })}
+        onChange={(offsetX) => updateSpec({ offsetX })}
         min={-offsetRange}
         max={offsetRange}
         step={1}
@@ -118,7 +153,7 @@ export function IconControls() {
       <SliderRow
         label="Offset Y"
         value={spec.offsetY}
-        onChange={(offsetY) => update({ offsetY })}
+        onChange={(offsetY) => updateSpec({ offsetY })}
         min={-offsetRange}
         max={offsetRange}
         step={1}
@@ -130,12 +165,12 @@ export function IconControls() {
         size="sm"
         onClick={() => {
           markUndoBoundary();
-          update({ offsetX: 0, offsetY: 0 });
+          updateSpec({ offsetX: 0, offsetY: 0, rotation: 0 });
         }}
-        disabled={spec.offsetX === 0 && spec.offsetY === 0}
+        disabled={spec.offsetX === 0 && spec.offsetY === 0 && spec.rotation === 0}
       >
         <Crosshair />
-        Re-center icon
+        Reset transform
       </Button>
     </div>
   );

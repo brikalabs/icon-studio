@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "lucide-static": "^1.17.0",
+    "simple-icons": "^16.23.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

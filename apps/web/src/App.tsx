@@ -20,6 +20,13 @@ export function App() {
     return () => window.clearTimeout(handle);
   }, [spec]);
 
+  // A shared brand-icon link needs the lazy catalogue before it can render.
+  useEffect(() => {
+    if (spec.icon.type === "brand") {
+      void useEditorStore.getState().loadBrands();
+    }
+  }, [spec.icon.type]);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || isEditableTarget(event.target)) {
