@@ -256,18 +256,20 @@ export function PreviewCanvas() {
             )}
           </div>
 
-          {/* Toolbar: mask selector + size readout + zoom, treated as one family */}
-          <div className="flex items-center gap-1 rounded-lg border bg-card/80 p-1 shadow-sm backdrop-blur-sm">
+          {/* Toolbar: Clay ToggleGroup (mask) + size readout + Clay Select (zoom).
+              Each is a self-framed Clay control, so there is no outer pill. */}
+          <div className="flex items-center gap-2">
             <ToggleGroup
               type="single"
               size="sm"
               value={previewMask}
               onValueChange={(value) => {
                 const parsed = previewMaskSchema.safeParse(value);
-                setPreviewMask(parsed.success ? parsed.data : "square");
+                if (parsed.success) {
+                  setPreviewMask(parsed.data);
+                }
               }}
               aria-label="Preview mask shape"
-              className="gap-0.5"
             >
               {MASK_OPTIONS.map((option) => (
                 <ToggleGroupItem
@@ -275,20 +277,15 @@ export function PreviewCanvas() {
                   value={option.id}
                   aria-label={`${option.label} preview`}
                   title={option.label}
-                  className="size-7 rounded-md p-0"
                 >
                   <option.icon className="size-4" />
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
 
-            <div className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
-
-            <span className="px-1 font-mono text-muted-foreground text-xs tabular-nums">
+            <span className="font-mono text-muted-foreground text-xs tabular-nums">
               {spec.canvasSize} px
             </span>
-
-            <div className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
 
             <Select
               value={String(zoom)}
@@ -301,7 +298,7 @@ export function PreviewCanvas() {
             >
               <SelectTrigger
                 size="sm"
-                className="h-7 w-fit gap-1 border-0 bg-transparent px-2 font-mono text-xs tabular-nums shadow-none"
+                className="w-20 font-mono text-xs tabular-nums"
                 aria-label="Preview zoom"
               >
                 <SelectValue />
