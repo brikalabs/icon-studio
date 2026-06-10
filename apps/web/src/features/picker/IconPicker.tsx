@@ -1,5 +1,6 @@
 import { Button } from "@brika/clay/components/button";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@brika/clay/components/input-group";
+import { ButtonGroup } from "@brika/clay/components/button-group";
+import { Input } from "@brika/clay/components/input";
 import {
   Select,
   SelectContent,
@@ -19,8 +20,9 @@ import {
   searchIconifyIcons,
   searchIcons,
 } from "@brika/icon-studio-core";
-import { ArrowLeft, Search, Shuffle } from "lucide-react";
+import { ArrowLeft, Shuffle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { SEARCH_INPUT_ID } from "../../lib/shortcuts";
 import { useEditorStore } from "../../state/editor-store";
 import { CollectionList } from "./CollectionList";
 import { CustomSvgDropzone } from "./CustomSvgDropzone";
@@ -160,9 +162,10 @@ export function IconPicker() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-col gap-2 p-3 pb-2">
-        <div className="flex items-center gap-1.5">
+        {/* Library, search, and shuffle joined into one control */}
+        <ButtonGroup>
           <Select value={library} onValueChange={switchLibrary}>
-            <SelectTrigger size="sm" className="w-24 shrink-0" aria-label="Icon library">
+            <SelectTrigger className="w-fit shrink-0 font-medium text-xs" aria-label="Icon library">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -173,28 +176,25 @@ export function IconPicker() {
               ))}
             </SelectContent>
           </Select>
-          <InputGroup className="flex-1">
-            <InputGroupAddon align="inline-start">
-              <Search className="size-3.5 text-muted-foreground" />
-            </InputGroupAddon>
-            <InputGroupInput
-              type="search"
-              placeholder={searchPlaceholder}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              aria-label="Search icons"
-            />
-          </InputGroup>
+          <Input
+            id={SEARCH_INPUT_ID}
+            type="search"
+            placeholder={searchPlaceholder}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            aria-label="Search icons"
+            className="min-w-0 flex-1"
+          />
           <Button
             variant="outline"
-            size="icon-sm"
+            size="icon"
             onClick={pickRandom}
             aria-label="Pick a random icon"
             title="Random icon"
           >
             <Shuffle className="size-3.5" />
           </Button>
-        </div>
+        </ButtonGroup>
         {collection ? (
           <button
             type="button"
