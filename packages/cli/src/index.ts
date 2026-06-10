@@ -4,7 +4,9 @@ import {
   type Background,
   backgroundPresets,
   buildIconSvg,
+  ensureIconifyIcons,
   ensureIconLibrary,
+  searchIconifyIcons,
   searchIcons,
 } from "@brika/icon-studio-core";
 import { HELP_TEXT, parseCliArgs } from "./args";
@@ -19,7 +21,9 @@ function describeBackground(background: Background): string {
 async function main(argv: readonly string[]): Promise<number> {
   const command = parseCliArgs(argv, (path) => readFileSync(path, "utf8"));
   await ensureIconLibrary(command.library);
-  if (command.spec.icon.type !== "custom") {
+  if (command.spec.icon.type === "iconify") {
+    await ensureIconifyIcons([command.spec.icon.name]);
+  } else if (command.spec.icon.type !== "custom") {
     await ensureIconLibrary(command.spec.icon.type);
   }
 
@@ -33,7 +37,11 @@ async function main(argv: readonly string[]): Promise<number> {
       }
       return 0;
     case "search": {
-      const results = searchIcons(command.library, command.query, 25);
+      const results =
+        command.library === "iconify"
+          ? await searchIconifyIcons(command.query, 25)
+          : searchIcons(command.library, command.query, 25);
+
       if (results.length === 0) {
         console.error(`no ${command.library} icons match "${command.query}"`);
         return 1;

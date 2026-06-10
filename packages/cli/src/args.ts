@@ -32,7 +32,8 @@ Usage
 Options
   -o, --out <file>        output path (default: <icon>.svg)
   -s, --size <px>         canvas edge in pixels (default: 512)
-      --lib <id>          icon library: lucide (default), tabler, hero, or brand
+      --lib <id>          icon library: lucide (default), tabler, hero, brand,
+                          or iconify (any Iconify icon as "prefix:name", needs network)
   -p, --preset <id>       background preset (see --list-presets)
       --bg <color>        solid background color, e.g. "#18181B"
       --from <color>      gradient start color (with --to)
@@ -55,6 +56,7 @@ Examples
   brika-icon rocket --stops "3F5EFB-FC466B" --angle 45 --rotate 15 --noise 0.2
   brika-icon github --lib brand --bg "#18181B"
   brika-icon bolt --lib tabler --preset midnight
+  brika-icon mdi:rocket-launch --lib iconify --preset ocean
   brika-icon --search alarm --lib hero
 `;
 
@@ -173,7 +175,9 @@ export function parseCliArgs(
 
   const library = iconLibraryIdSchema.safeParse(values.lib);
   if (!library.success) {
-    throw new Error(`--lib expects one of lucide, tabler, hero, brand; got "${values.lib}"`);
+    throw new Error(
+      `--lib expects one of lucide, tabler, hero, brand, iconify; got "${values.lib}"`,
+    );
   }
   const defaults = createDefaultIconSpec();
   const base: CliCommand = {

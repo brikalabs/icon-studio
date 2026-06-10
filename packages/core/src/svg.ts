@@ -1,4 +1,4 @@
-import { embedCustomSvg } from "./custom-svg";
+import { embedCustomSvg, sanitizeSvgContent } from "./custom-svg";
 import { LUCIDE_GRID, serializeIconNode } from "./icon-node";
 import { getIconGlyph } from "./libraries";
 import {
@@ -108,15 +108,24 @@ function iconBox(spec: IconSpec): IconBox {
 }
 
 /** translate + scale + rotate-about-grid-center, applied right to left. */
-function gridTransform(box: IconBox, rotation: number): string {
-  const scale = box.size / LUCIDE_GRID;
-  const center = LUCIDE_GRID / 2;
+function gridTransform(
+  box: IconBox,
+  rotation: number,
+  gridWidth = LUCIDE_GRID,
+  gridHeight = LUCIDE_GRID,
+): string {
+  const scale = box.size / Math.max(gridWidth, gridHeight);
+  // Center non-square grids inside the square icon box.
+  const x = box.x + (box.size - gridWidth * scale) / 2;
+  const y = box.y + (box.size - gridHeight * scale) / 2;
   const parts = [
-    `translate(${formatNumber(box.x)} ${formatNumber(box.y)})`,
+    `translate(${formatNumber(x)} ${formatNumber(y)})`,
     `scale(${formatNumber(scale)})`,
   ];
   if (rotation !== 0) {
-    parts.push(`rotate(${formatNumber(rotation)} ${center} ${center})`);
+    parts.push(
+      `rotate(${formatNumber(rotation)} ${formatNumber(gridWidth / 2)} ${formatNumber(gridHeight / 2)})`,
+    );
   }
   return parts.join(" ");
 }
@@ -138,6 +147,16 @@ function renderIconLayer(spec: IconSpec): string {
   if (!glyph) {
     throw new Error(`unknown ${spec.icon.type} icon "${spec.icon.name}"`);
   }
+
+  if (glyph.kind === "body") {
+    // Iconify bodies carry their own grid and reference currentColor.
+    const attributes = serializeAttributes({
+      transform: gridTransform(box, spec.rotation, glyph.width, glyph.height),
+      color: spec.iconColor,
+    });
+    return `<g${attributes}>${sanitizeSvgContent(glyph.body)}</g>`;
+  }
+
   const transform = gridTransform(box, spec.rotation);
   const attributes =
     glyph.kind === "fill"
@@ -177,7 +196,11 @@ export function buildIconSvg(input: IconSpecInput): string {
   return `<svg${rootAttributes}>${defs}${rect}${renderIconLayer(spec)}${noise.layer}</svg>`;
 }
 
-/** Download/file name suggestion for a spec, e.g. "bell.svg". */
+/** Download/file name suggestion for a spec, e.g. "bell.svg" or "mdi-home.svg". */
 export function suggestFileName(spec: Pick<IconSpec, "icon">): string {
-  return spec.icon.type === "custom" ? "icon.svg" : `${spec.icon.name}.svg`;
+  if (spec.icon.type === "custom") {
+    return "icon.svg";
+  }
+  // Iconify names carry a "prefix:" that filesystems (Windows) reject.
+  return `${spec.icon.name.replace(/:/g, "-")}.svg`;
 }

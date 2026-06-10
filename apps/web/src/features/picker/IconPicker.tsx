@@ -1,5 +1,6 @@
 import { Button } from "@brika/clay/components/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@brika/clay/components/input-group";
+import { toast } from "@brika/clay/components/toast";
 import { ToggleGroup, ToggleGroupItem } from "@brika/clay/components/toggle-group";
 import { cn } from "@brika/clay/primitives";
 import {
@@ -7,11 +8,12 @@ import {
   iconLibraries,
   iconLibraryIdSchema,
   isIconLibraryReady,
+  searchIconifyIcons,
   searchIcons,
 } from "@brika/icon-studio-core";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search, Shuffle } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { IconGlyph } from "../../components/IconGlyph";
 import { useEditorStore } from "../../state/editor-store";
 import { CustomSvgDropzone } from "./CustomSvgDropzone";
@@ -27,9 +29,40 @@ export function IconPicker() {
   const markUndoBoundary = useEditorStore((state) => state.markUndoBoundary);
   const catalogueVersion = useEditorStore((state) => state.catalogueVersion);
   const loadLibrary = useEditorStore((state) => state.loadLibrary);
+  const loadIconifyIcons = useEditorStore((state) => state.loadIconifyIcons);
+  const [remoteNames, setRemoteNames] = useState<readonly string[]>([]);
+  const [remoteSearching, setRemoteSearching] = useState(false);
+
+  // The "All" tab searches the Iconify API (debounced), then prefetches the
+  // result glyphs so the grid can render synchronously from the cache.
+  useEffect(() => {
+    if (library !== "iconify") {
+      return;
+    }
+    if (query.trim() === "") {
+      setRemoteNames([]);
+      return;
+    }
+    setRemoteSearching(true);
+    const handle = window.setTimeout(async () => {
+      try {
+        const found = await searchIconifyIcons(query, 120);
+        await loadIconifyIcons(found);
+        setRemoteNames(found);
+      } catch {
+        toast.error("Icon search failed, check your connection");
+      } finally {
+        setRemoteSearching(false);
+      }
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [library, query, loadIconifyIcons]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies(catalogueVersion): the catalogues live outside React; the version bumping is what makes searchIcons return a lazy library's results
-  const names = useMemo(() => searchIcons(library, query), [library, query, catalogueVersion]);
+  const names = useMemo(
+    () => (library === "iconify" ? remoteNames : searchIcons(library, query)),
+    [library, query, remoteNames, catalogueVersion],
+  );
   const selectedName = spec.icon.type === library ? spec.icon.name : null;
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -61,7 +94,17 @@ export function IconPicker() {
     }
   };
 
-  const loadingLibrary = !isIconLibraryReady(library);
+  const emptyMessage = (() => {
+    if (library === "iconify") {
+      if (remoteSearching) {
+        return "Searching...";
+      }
+      return query.trim() === ""
+        ? "Search 200,000+ icons across every Iconify set"
+        : `No icons match "${query}"`;
+    }
+    return isIconLibraryReady(library) ? `No icons match "${query}"` : "Loading icons...";
+  })();
 
   return (
     <div className="flex h-full flex-col">
@@ -107,9 +150,7 @@ export function IconPicker() {
       </div>
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
         {names.length === 0 ? (
-          <p className="px-1 py-8 text-center text-sm text-muted-foreground">
-            {loadingLibrary ? "Loading icons..." : `No icons match "${query}"`}
-          </p>
+          <p className="px-1 py-8 text-center text-sm text-muted-foreground">{emptyMessage}</p>
         ) : (
           <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
             {virtualizer.getVirtualItems().map((row) => (

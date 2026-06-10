@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Header } from "./components/Header";
 import { ControlsPanel } from "./features/controls/ControlsPanel";
+import { CommandPalette } from "./features/palette/CommandPalette";
 import { IconPicker } from "./features/picker/IconPicker";
 import { PreviewCanvas } from "./features/preview/PreviewCanvas";
 import { syncSpecToUrl, useEditorStore } from "./state/editor-store";
@@ -20,12 +21,16 @@ export function App() {
     return () => window.clearTimeout(handle);
   }, [spec]);
 
-  // A shared link to a lazy library needs its catalogue before it can render.
+  // A shared link to a lazy library needs its catalogue (or, for Iconify,
+  // the specific icon) before it can render.
   useEffect(() => {
-    if (spec.icon.type !== "custom") {
-      void useEditorStore.getState().loadLibrary(spec.icon.type);
+    const icon = spec.icon;
+    if (icon.type === "iconify") {
+      void useEditorStore.getState().loadIconifyIcons([icon.name]);
+    } else if (icon.type !== "custom") {
+      void useEditorStore.getState().loadLibrary(icon.type);
     }
-  }, [spec.icon.type]);
+  }, [spec.icon]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -63,6 +68,7 @@ export function App() {
           <ControlsPanel />
         </aside>
       </main>
+      <CommandPalette />
     </div>
   );
 }

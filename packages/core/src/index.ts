@@ -1,6 +1,14 @@
 export { embedCustomSvg, sanitizeSvgContent } from "./custom-svg";
 export { type IconNode, LUCIDE_GRID, serializeIconNode } from "./icon-node";
 export {
+  configureIconify,
+  ensureIconifyIcons,
+  getIconifyIcon,
+  type IconifyBodyGlyph,
+  isIconifyIconMissing,
+  searchIconifyIcons,
+} from "./iconify";
+export {
   ensureIconLibrary,
   type GlyphKind,
   getIconGlyph,

@@ -194,9 +194,10 @@ describe("linearGradientEndpoints", () => {
 });
 
 describe("suggestFileName", () => {
-  test("uses the icon name for lucide and brand icons", () => {
+  test("uses the icon name for library icons", () => {
     expect(suggestFileName(createDefaultIconSpec())).toBe("bell.svg");
     expect(suggestFileName({ icon: { type: "brand", name: "github" } })).toBe("github.svg");
+    expect(suggestFileName({ icon: { type: "iconify", name: "mdi:home" } })).toBe("mdi-home.svg");
   });
 
   test("falls back for custom icons", () => {

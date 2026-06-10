@@ -1,5 +1,6 @@
 import {
   createDefaultIconSpec,
+  ensureIconifyIcons,
   ensureIconLibrary,
   type IconLibraryId,
   type IconSpec,
@@ -32,6 +33,11 @@ interface EditorState {
   setSelected: (selected: boolean) => void;
   /** Loads a lazy icon catalogue chunk; safe to call repeatedly. */
   loadLibrary: (id: IconLibraryId) => Promise<void>;
+  /** Fetches specific Iconify icons into the cache; safe to call repeatedly. */
+  loadIconifyIcons: (names: readonly string[]) => Promise<void>;
+  /** Whether the command palette is open. */
+  paletteOpen: boolean;
+  setPaletteOpen: (open: boolean) => void;
   undo: () => void;
   redo: () => void;
 }
@@ -73,6 +79,12 @@ export const useEditorStore = create<EditorState>((set) => ({
     await ensureIconLibrary(id);
     set((state) => ({ catalogueVersion: state.catalogueVersion + 1 }));
   },
+  loadIconifyIcons: async (names) => {
+    await ensureIconifyIcons(names);
+    set((state) => ({ catalogueVersion: state.catalogueVersion + 1 }));
+  },
+  paletteOpen: false,
+  setPaletteOpen: (open) => set({ paletteOpen: open }),
   undo: () =>
     set((state) => {
       const previous = state.past.at(-1);

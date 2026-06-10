@@ -10,11 +10,16 @@ Built with [Clay](https://clay.brika.dev), Brika's design system.
 
 ## Features
 
-- **Four icon libraries plus your own artwork**: [lucide](https://lucide.dev)
-  (1700+), [Tabler](https://tabler.io/icons) (5000+),
-  [Heroicons](https://heroicons.com) (320+),
-  [simple-icons](https://simpleicons.org) brand marks (3400+), or any SVG file
-  via drag-and-drop. Each catalogue beyond lucide is a lazy-loaded chunk.
+- **Every icon you can think of, plus your own artwork**: bundled
+  [lucide](https://lucide.dev) (1700+), [Tabler](https://tabler.io/icons)
+  (5000+), [Heroicons](https://heroicons.com) (320+), and
+  [simple-icons](https://simpleicons.org) brand marks (3400+), the "All" tab
+  searching 200,000+ icons across every set via the
+  [Iconify](https://iconify.design) API, or any SVG file via drag-and-drop.
+  Each bundled catalogue beyond lucide is a lazy-loaded chunk; Iconify glyphs
+  are fetched on demand.
+- **Command palette**: Cmd/Ctrl+K for icon search, presets, export, undo/redo,
+  and transform resets without touching the mouse.
 - **Gradient engine**: linear and radial fills with 2 to 8 draggable color
   stops, angle control, radial center/radius, and 32 curated presets.
 - **On-canvas editing**: click the icon to select it, then drag to move
@@ -57,6 +62,7 @@ bun packages/cli/src/index.ts bell --preset sunset -o icon.svg
 bun packages/cli/src/index.ts rocket --stops "3F5EFB-9D50BB-FC466B" --angle 120 --rotate 15
 bun packages/cli/src/index.ts github --lib brand --bg "#18181B"
 bun packages/cli/src/index.ts bolt --lib tabler --preset midnight
+bun packages/cli/src/index.ts mdi:rocket-launch --lib iconify --preset ocean
 bun packages/cli/src/index.ts database --bg "#18181B" --icon-color "#38EF7D" --noise 0.2
 bun packages/cli/src/index.ts --search alarm --lib hero
 bun packages/cli/src/index.ts --custom logo.svg --preset ocean

@@ -1,4 +1,9 @@
-import { buildIconSvg, isIconLibraryReady } from "@brika/icon-studio-core";
+import {
+  buildIconSvg,
+  getIconGlyph,
+  isIconifyIconMissing,
+  isIconLibraryReady,
+} from "@brika/icon-studio-core";
 import { useMemo, useRef, useState } from "react";
 import { svgToDataUri } from "../../lib/svg-io";
 import { useEditorStore } from "../../state/editor-store";
@@ -37,7 +42,12 @@ export function PreviewCanvas() {
   const dragRef = useRef<DragState | null>(null);
   const [snapped, setSnapped] = useState<SnappedAxes>({ x: false, y: false });
 
-  const waitingForLibrary = spec.icon.type !== "custom" && !isIconLibraryReady(spec.icon.type);
+  const waitingForLibrary =
+    spec.icon.type !== "custom" &&
+    (!isIconLibraryReady(spec.icon.type) ||
+      (spec.icon.type === "iconify" &&
+        !getIconGlyph("iconify", spec.icon.name) &&
+        !isIconifyIconMissing(spec.icon.name)));
   // biome-ignore lint/correctness/useExhaustiveDependencies(catalogueVersion): catalogues live outside React; the version bump is what turns a loading state into a render
   const rendered = useMemo(() => {
     if (waitingForLibrary) {

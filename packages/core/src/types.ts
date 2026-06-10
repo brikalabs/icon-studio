@@ -44,7 +44,7 @@ export const backgroundSchema = z.discriminatedUnion("type", [
   radialBackgroundSchema,
 ]);
 
-export const iconLibraryIdSchema = z.enum(["lucide", "tabler", "hero", "brand"]);
+export const iconLibraryIdSchema = z.enum(["lucide", "tabler", "hero", "brand", "iconify"]);
 export type IconLibraryId = z.infer<typeof iconLibraryIdSchema>;
 
 export const libraryIconSourceSchema = z.object({

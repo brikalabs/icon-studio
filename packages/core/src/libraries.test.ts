@@ -19,12 +19,13 @@ beforeAll(async () => {
 });
 
 describe("icon library registry", () => {
-  test("lists the four libraries in display order", () => {
+  test("lists the five libraries in display order", () => {
     expect(iconLibraries.map((library) => library.id)).toEqual([
       "lucide",
       "tabler",
       "hero",
       "brand",
+      "iconify",
     ]);
   });
 
@@ -43,14 +44,18 @@ describe("icon library registry", () => {
     for (const library of ["lucide", "tabler", "hero"] as const) {
       const glyph = getIconGlyph(library, "bell");
       expect(glyph?.kind).toBe("stroke");
-      expect(glyph?.node.length).toBeGreaterThan(0);
+      if (glyph?.kind === "stroke") {
+        expect(glyph.node.length).toBeGreaterThan(0);
+      }
     }
   });
 
   test("brands expose filled single-path glyphs", () => {
     const glyph = getIconGlyph("brand", "github");
     expect(glyph?.kind).toBe("fill");
-    expect(glyph?.node[0]?.[0]).toBe("path");
+    if (glyph?.kind === "fill") {
+      expect(glyph.node[0]?.[0]).toBe("path");
+    }
   });
 
   test("unknown names return undefined", () => {
