@@ -9,7 +9,12 @@ import {
   specToSearchParams,
   suggestFileName,
 } from "@brika/icon-studio-core";
+import { z } from "zod";
 import { create } from "zustand";
+
+/** Preview-only crop simulating platform icon masks; exports always stay square. */
+export const previewMaskSchema = z.enum(["square", "rounded", "squircle", "circle"]);
+export type PreviewMask = z.infer<typeof previewMaskSchema>;
 
 const HISTORY_LIMIT = 100;
 /** Edits closer together than this collapse into one undo step (slider drags). */
@@ -41,6 +46,9 @@ interface EditorState {
   /** Which library tab the picker shows; lifted so the palette can navigate it. */
   pickerLibrary: IconLibraryId;
   setPickerLibrary: (library: IconLibraryId) => void;
+  /** Mask applied to the preview only, to verify circle/squircle/radius crops. */
+  previewMask: PreviewMask;
+  setPreviewMask: (mask: PreviewMask) => void;
   undo: () => void;
   redo: () => void;
 }
@@ -93,6 +101,8 @@ export const useEditorStore = create<EditorState>((set) => ({
   // A shared link opens the picker on the library it points at.
   pickerLibrary: initial.icon.type === "custom" ? "lucide" : initial.icon.type,
   setPickerLibrary: (library) => set({ pickerLibrary: library }),
+  previewMask: "square",
+  setPreviewMask: (mask) => set({ previewMask: mask }),
   undo: () =>
     set((state) => {
       const previous = state.past.at(-1);

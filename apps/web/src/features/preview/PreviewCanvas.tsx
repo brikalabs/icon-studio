@@ -1,17 +1,45 @@
+import { ToggleGroup, ToggleGroupItem } from "@brika/clay/components/toggle-group";
 import {
   buildIconSvg,
   getIconGlyph,
   isIconifyIconMissing,
   isIconLibraryReady,
 } from "@brika/icon-studio-core";
-import { useMemo, useRef, useState } from "react";
+import { Circle, Square, SquareRoundCorner, Squircle } from "lucide-react";
+import { type CSSProperties, useMemo, useRef, useState } from "react";
 import { svgToDataUri } from "../../lib/svg-io";
-import { useEditorStore } from "../../state/editor-store";
+import { type PreviewMask, previewMaskSchema, useEditorStore } from "../../state/editor-store";
 import { SelectionOverlay } from "./SelectionOverlay";
 
 const DISPLAY_SIZE = 480;
 /** Drag snaps to the canvas center inside this many display pixels. */
 const SNAP_DISTANCE = 6;
+
+/** Superellipse |x|^n + |y|^n = 1 sampled as a percentage polygon (iOS-style squircle at n=5). */
+function superellipseClip(exponent: number, samples: number): string {
+  const points: string[] = [];
+  for (let i = 0; i < samples; i++) {
+    const t = (i / samples) * 2 * Math.PI;
+    const along = (value: number) =>
+      (50 + 50 * Math.sign(value) * Math.abs(value) ** (2 / exponent)).toFixed(2);
+    points.push(`${along(Math.cos(t))}% ${along(Math.sin(t))}%`);
+  }
+  return `polygon(${points.join(", ")})`;
+}
+
+const MASK_STYLES: Record<PreviewMask, CSSProperties> = {
+  square: {},
+  rounded: { borderRadius: "20%" },
+  squircle: { clipPath: superellipseClip(5, 96) },
+  circle: { borderRadius: "50%" },
+};
+
+const MASK_OPTIONS = [
+  { id: "square", label: "Square", icon: Square },
+  { id: "rounded", label: "Rounded corners", icon: SquareRoundCorner },
+  { id: "squircle", label: "Squircle", icon: Squircle },
+  { id: "circle", label: "Circle", icon: Circle },
+] as const;
 
 interface DragState {
   pointerId: number;
@@ -39,6 +67,8 @@ export function PreviewCanvas() {
   const updateSpec = useEditorStore((state) => state.updateSpec);
   const markUndoBoundary = useEditorStore((state) => state.markUndoBoundary);
   const catalogueVersion = useEditorStore((state) => state.catalogueVersion);
+  const previewMask = useEditorStore((state) => state.previewMask);
+  const setPreviewMask = useEditorStore((state) => state.setPreviewMask);
   const dragRef = useRef<DragState | null>(null);
   const [snapped, setSnapped] = useState<SnappedAxes>({ x: false, y: false });
 
@@ -145,11 +175,22 @@ export function PreviewCanvas() {
       >
         {rendered.uri ? (
           <>
+            {previewMask !== "square" ? (
+              // Ghost of the full square, so the cropped area stays visible.
+              <img
+                src={rendered.uri}
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                className="absolute inset-0 h-full w-full opacity-20"
+              />
+            ) : null}
             <img
               src={rendered.uri}
               alt="Generated icon preview"
               draggable={false}
-              className="h-full w-full"
+              className="relative h-full w-full"
+              style={MASK_STYLES[previewMask]}
             />
             {snapped.x ? (
               <div className="-translate-x-1/2 pointer-events-none absolute inset-y-0 left-1/2 w-px bg-primary/80" />
@@ -169,9 +210,36 @@ export function PreviewCanvas() {
           </div>
         )}
       </div>
-      <span className="font-mono text-xs text-muted-foreground">
-        {spec.canvasSize} × {spec.canvasSize}
-      </span>
+      <div className="flex items-center gap-3">
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={previewMask}
+          onValueChange={(value) => {
+            const parsed = previewMaskSchema.safeParse(value);
+            setPreviewMask(parsed.success ? parsed.data : "square");
+          }}
+          aria-label="Preview mask shape"
+        >
+          {MASK_OPTIONS.map((option) => (
+            <ToggleGroupItem
+              key={option.id}
+              value={option.id}
+              aria-label={`${option.label} preview`}
+              title={option.label}
+            >
+              <option.icon />
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+        <span className="font-mono text-muted-foreground text-xs">
+          {spec.canvasSize} × {spec.canvasSize}
+        </span>
+        {previewMask !== "square" ? (
+          <span className="text-muted-foreground text-xs">mask is preview only</span>
+        ) : null}
+      </div>
     </div>
   );
 }
