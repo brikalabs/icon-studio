@@ -93,13 +93,25 @@ describe("URL codec", () => {
     expect(roundTrip(spec)).toEqual(spec);
   });
 
-  test("solid backgrounds and brand icons stay compact", () => {
+  test("solid backgrounds and non-lucide libraries stay compact", () => {
     const spec: IconSpec = {
       ...createDefaultIconSpec(),
       background: { type: "solid", color: "#101010" },
       icon: { type: "brand", name: "spotify" },
     };
-    expect(specToSearchParams(spec).toString()).toBe("b=spotify&c=101010");
+    expect(specToSearchParams(spec).toString()).toBe("i=spotify&l=brand&c=101010");
+
+    const tabler: IconSpec = {
+      ...createDefaultIconSpec(),
+      icon: { type: "tabler", name: "bell" },
+    };
+    expect(specToSearchParams(tabler).toString()).toBe("i=bell&l=tabler");
+    expect(roundTrip(tabler)).toEqual(tabler);
+  });
+
+  test("an unknown library falls back to lucide", () => {
+    const decoded = specFromSearchParams(new URLSearchParams("i=bell&l=nope"));
+    expect(decoded.icon).toEqual({ type: "lucide", name: "bell" });
   });
 
   test("empty params decode to the default spec", () => {

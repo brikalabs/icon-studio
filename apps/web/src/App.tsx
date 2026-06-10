@@ -20,10 +20,10 @@ export function App() {
     return () => window.clearTimeout(handle);
   }, [spec]);
 
-  // A shared brand-icon link needs the lazy catalogue before it can render.
+  // A shared link to a lazy library needs its catalogue before it can render.
   useEffect(() => {
-    if (spec.icon.type === "brand") {
-      void useEditorStore.getState().loadBrands();
+    if (spec.icon.type !== "custom") {
+      void useEditorStore.getState().loadLibrary(spec.icon.type);
     }
   }, [spec.icon.type]);
 

@@ -1,4 +1,4 @@
-import { buildIconSvg } from "@brika/icon-studio-core";
+import { buildIconSvg, isIconLibraryReady } from "@brika/icon-studio-core";
 import { useMemo, useRef, useState } from "react";
 import { svgToDataUri } from "../../lib/svg-io";
 import { useEditorStore } from "../../state/editor-store";
@@ -33,21 +33,22 @@ export function PreviewCanvas() {
   const setSelected = useEditorStore((state) => state.setSelected);
   const updateSpec = useEditorStore((state) => state.updateSpec);
   const markUndoBoundary = useEditorStore((state) => state.markUndoBoundary);
-  const brandsReady = useEditorStore((state) => state.brandsReady);
+  const catalogueVersion = useEditorStore((state) => state.catalogueVersion);
   const dragRef = useRef<DragState | null>(null);
   const [snapped, setSnapped] = useState<SnappedAxes>({ x: false, y: false });
 
-  const waitingForBrands = spec.icon.type === "brand" && !brandsReady;
+  const waitingForLibrary = spec.icon.type !== "custom" && !isIconLibraryReady(spec.icon.type);
+  // biome-ignore lint/correctness/useExhaustiveDependencies(catalogueVersion): catalogues live outside React; the version bump is what turns a loading state into a render
   const rendered = useMemo(() => {
-    if (waitingForBrands) {
-      return { uri: null, error: "Loading brand icons..." };
+    if (waitingForLibrary) {
+      return { uri: null, error: "Loading icons..." };
     }
     try {
       return { uri: svgToDataUri(buildIconSvg(spec)), error: null };
     } catch (error) {
       return { uri: null, error: error instanceof Error ? error.message : "Invalid icon spec" };
     }
-  }, [spec, waitingForBrands]);
+  }, [spec, waitingForLibrary, catalogueVersion]);
 
   const scaleToCanvas = spec.canvasSize / DISPLAY_SIZE;
   const snapThreshold = SNAP_DISTANCE * scaleToCanvas;
@@ -151,7 +152,7 @@ export function PreviewCanvas() {
         ) : (
           <div
             className={`flex h-full items-center justify-center p-8 text-center text-sm ${
-              waitingForBrands ? "text-muted-foreground" : "text-destructive"
+              waitingForLibrary ? "text-muted-foreground" : "text-destructive"
             }`}
           >
             {rendered.error}

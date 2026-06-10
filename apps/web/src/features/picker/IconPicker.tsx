@@ -2,7 +2,13 @@ import { Button } from "@brika/clay/components/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@brika/clay/components/input-group";
 import { ToggleGroup, ToggleGroupItem } from "@brika/clay/components/toggle-group";
 import { cn } from "@brika/clay/primitives";
-import { type IconLibraryId, iconLibraries, searchIcons } from "@brika/icon-studio-core";
+import {
+  type IconLibraryId,
+  iconLibraries,
+  iconLibraryIdSchema,
+  isIconLibraryReady,
+  searchIcons,
+} from "@brika/icon-studio-core";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search, Shuffle } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
@@ -19,11 +25,11 @@ export function IconPicker() {
   const spec = useEditorStore((state) => state.spec);
   const updateSpec = useEditorStore((state) => state.updateSpec);
   const markUndoBoundary = useEditorStore((state) => state.markUndoBoundary);
-  const brandsReady = useEditorStore((state) => state.brandsReady);
-  const loadBrands = useEditorStore((state) => state.loadBrands);
+  const catalogueVersion = useEditorStore((state) => state.catalogueVersion);
+  const loadLibrary = useEditorStore((state) => state.loadLibrary);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies(brandsReady): the catalogue lives outside React; brandsReady flipping is what makes searchIcons return brand results
-  const names = useMemo(() => searchIcons(library, query), [library, query, brandsReady]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies(catalogueVersion): the catalogues live outside React; the version bumping is what makes searchIcons return a lazy library's results
+  const names = useMemo(() => searchIcons(library, query), [library, query, catalogueVersion]);
   const selectedName = spec.icon.type === library ? spec.icon.name : null;
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -47,16 +53,15 @@ export function IconPicker() {
   };
 
   const switchLibrary = (next: string) => {
-    if (next === "lucide" || next === "brand") {
-      setLibrary(next);
-      if (next === "brand") {
-        void loadBrands();
-      }
+    const parsed = iconLibraryIdSchema.safeParse(next);
+    if (parsed.success) {
+      setLibrary(parsed.data);
+      void loadLibrary(parsed.data);
       virtualizer.scrollToIndex(0);
     }
   };
 
-  const loadingBrands = library === "brand" && !brandsReady;
+  const loadingLibrary = !isIconLibraryReady(library);
 
   return (
     <div className="flex h-full flex-col">
@@ -103,7 +108,7 @@ export function IconPicker() {
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
         {names.length === 0 ? (
           <p className="px-1 py-8 text-center text-sm text-muted-foreground">
-            {loadingBrands ? "Loading brand icons..." : `No icons match "${query}"`}
+            {loadingLibrary ? "Loading icons..." : `No icons match "${query}"`}
           </p>
         ) : (
           <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>

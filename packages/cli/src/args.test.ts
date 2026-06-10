@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, test } from "bun:test";
-import { ensureBrandIcons, searchIcons } from "@brika/icon-studio-core";
+import { ensureIconLibrary, searchIcons } from "@brika/icon-studio-core";
 import { parseCliArgs } from "./args";
 
-beforeAll(ensureBrandIcons);
+beforeAll(() => Promise.all([ensureIconLibrary("tabler"), ensureIconLibrary("brand")]));
 
 const noFile = (): string => {
   throw new Error("no file access expected");
@@ -16,10 +16,18 @@ describe("parseCliArgs", () => {
     expect(command.outFile).toBe("bell.svg");
   });
 
-  test("--lib brand selects the simple-icons library", () => {
-    const command = parseCliArgs(["github", "--lib", "brand"], noFile);
-    expect(command.spec.icon).toEqual({ type: "brand", name: "github" });
-    expect(command.outFile).toBe("github.svg");
+  test("--lib selects the icon library", () => {
+    const brand = parseCliArgs(["github", "--lib", "brand"], noFile);
+    expect(brand.spec.icon).toEqual({ type: "brand", name: "github" });
+    expect(brand.outFile).toBe("github.svg");
+    expect(parseCliArgs(["bolt", "--lib", "tabler"], noFile).spec.icon).toEqual({
+      type: "tabler",
+      name: "bolt",
+    });
+    expect(parseCliArgs(["bell", "--lib", "hero"], noFile).spec.icon).toEqual({
+      type: "hero",
+      name: "bell",
+    });
   });
 
   test("applies a preset background", () => {
@@ -129,7 +137,9 @@ describe("parseCliArgs", () => {
     expect(() => parseCliArgs([], noFile)).toThrow("missing icon name");
     expect(() => parseCliArgs(["bell", "--bg", "red"], noFile)).toThrow("hex color");
     expect(() => parseCliArgs(["bell", "--preset", "nope"], noFile)).toThrow("unknown preset");
-    expect(() => parseCliArgs(["bell", "--lib", "nope"], noFile)).toThrow("--lib expects");
+    expect(() => parseCliArgs(["bell", "--lib", "nope"], noFile)).toThrow(
+      "--lib expects one of lucide, tabler, hero, brand",
+    );
     expect(() => parseCliArgs(["bell", "--stops", "3F5EFB"], noFile)).toThrow("at least two");
     expect(() => parseCliArgs(["bell", "--from", "#FFFFFF"], noFile)).toThrow(
       "--from and --to must be used together",
@@ -142,7 +152,8 @@ describe("searchIcons via CLI contract", () => {
     expect(searchIcons("lucide", "bell", 25)[0]).toBe("bell");
   });
 
-  test("brand search finds slugs", () => {
+  test("brand and tabler searches find slugs", () => {
     expect(searchIcons("brand", "spotify", 25)).toContain("spotify");
+    expect(searchIcons("tabler", "bolt", 25)).toContain("bolt");
   });
 });

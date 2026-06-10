@@ -1,16 +1,18 @@
 # Icon Studio
 
-Design square SVG icons for [Brika](https://brika.dev) plugins. Pick any of the
-1700+ [lucide](https://lucide.dev) glyphs or 3000+ [simple-icons](https://simpleicons.org)
-brand marks, drop in your own SVG, tune a multi-stop gradient, drag the icon
-into place, and export clean, standalone SVG.
+Design square SVG icons for [Brika](https://brika.dev) plugins. Pick from
+10,000+ glyphs across four libraries, drop in your own SVG, tune a multi-stop
+gradient, drag the icon into place, and export clean, standalone SVG.
 
 Built with [Clay](https://clay.brika.dev), Brika's design system.
 
 ## Features
 
-- **Two icon libraries plus your own artwork**: lucide (stroke icons), brands
-  (simple-icons, lazy-loaded chunk), or any SVG file via drag-and-drop.
+- **Four icon libraries plus your own artwork**: [lucide](https://lucide.dev)
+  (1700+), [Tabler](https://tabler.io/icons) (5000+),
+  [Heroicons](https://heroicons.com) (320+),
+  [simple-icons](https://simpleicons.org) brand marks (3400+), or any SVG file
+  via drag-and-drop. Each catalogue beyond lucide is a lazy-loaded chunk.
 - **Gradient engine**: linear and radial fills with 2 to 8 draggable color
   stops, angle control, radial center/radius, and 32 curated presets.
 - **On-canvas editing**: click the icon to select it, then drag to move
@@ -52,10 +54,15 @@ bun packages/cli/src/index.ts --help
 bun packages/cli/src/index.ts bell --preset sunset -o icon.svg
 bun packages/cli/src/index.ts rocket --stops "3F5EFB-9D50BB-FC466B" --angle 120 --rotate 15
 bun packages/cli/src/index.ts github --lib brand --bg "#18181B"
+bun packages/cli/src/index.ts bolt --lib tabler --preset midnight
 bun packages/cli/src/index.ts database --bg "#18181B" --icon-color "#38EF7D" --noise 0.2
-bun packages/cli/src/index.ts --search alarm
+bun packages/cli/src/index.ts --search alarm --lib hero
 bun packages/cli/src/index.ts --custom logo.svg --preset ocean
 ```
+
+Tabler and Heroicons catalogues are vendored into `packages/core/src/data/`;
+refresh them after bumping `@tabler/icons` or `heroicons` with
+`bun run sync:icons`.
 
 The repo's own `apps/web/public/favicon.svg` is generated with it:
 
@@ -66,10 +73,12 @@ bun packages/cli/src/index.ts layout-grid --preset raycast --scale 0.5 -o apps/w
 ## Deploy
 
 The web app ships as a Cloudflare Worker with static assets
-(`apps/web/wrangler.jsonc`). Pushes to `main` deploy via GitHub Actions; the
-workflow needs two repo secrets:
+(`apps/web/wrangler.jsonc`). Releases are automatic through Cloudflare's
+git integration (Workers Builds): connect this repository in the Cloudflare
+dashboard with:
 
-- `CLOUDFLARE_API_TOKEN` (Workers Scripts: Edit)
-- `CLOUDFLARE_ACCOUNT_ID`
+- Root directory: `/` (workspace install must run from the repo root)
+- Build command: `bun install && bun run build`
+- Deploy command: `npx wrangler deploy --config apps/web/wrangler.jsonc`
 
 Manual deploy: `bun run deploy` (requires `wrangler login`).

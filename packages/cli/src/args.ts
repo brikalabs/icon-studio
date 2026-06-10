@@ -8,6 +8,7 @@ import {
   hexColorSchema,
   type IconLibraryId,
   type IconSpec,
+  iconLibraryIdSchema,
   iconSpecSchema,
   suggestFileName,
 } from "@brika/icon-studio-core";
@@ -31,7 +32,7 @@ Usage
 Options
   -o, --out <file>        output path (default: <icon>.svg)
   -s, --size <px>         canvas edge in pixels (default: 512)
-      --lib <id>          icon library: lucide (default) or brand (simple-icons)
+      --lib <id>          icon library: lucide (default), tabler, hero, or brand
   -p, --preset <id>       background preset (see --list-presets)
       --bg <color>        solid background color, e.g. "#18181B"
       --from <color>      gradient start color (with --to)
@@ -53,7 +54,8 @@ Examples
   brika-icon bell --preset sunset -o assets/icon.svg
   brika-icon rocket --stops "3F5EFB-FC466B" --angle 45 --rotate 15 --noise 0.2
   brika-icon github --lib brand --bg "#18181B"
-  brika-icon --search alarm
+  brika-icon bolt --lib tabler --preset midnight
+  brika-icon --search alarm --lib hero
 `;
 
 function parseColor(flag: string, value: string): string {
@@ -169,8 +171,9 @@ export function parseCliArgs(
     },
   });
 
-  if (values.lib !== "lucide" && values.lib !== "brand") {
-    throw new Error(`--lib expects "lucide" or "brand", got "${values.lib}"`);
+  const library = iconLibraryIdSchema.safeParse(values.lib);
+  if (!library.success) {
+    throw new Error(`--lib expects one of lucide, tabler, hero, brand; got "${values.lib}"`);
   }
   const defaults = createDefaultIconSpec();
   const base: CliCommand = {
@@ -178,7 +181,7 @@ export function parseCliArgs(
     spec: defaults,
     outFile: "",
     query: values.search ?? "",
-    library: values.lib,
+    library: library.data,
   };
 
   if (values.help) {
@@ -202,7 +205,7 @@ export function parseCliArgs(
     icon:
       values.custom !== undefined
         ? { type: "custom", svg: readFile(values.custom) }
-        : { type: values.lib, name: iconName ?? "bell" },
+        : { type: library.data, name: iconName ?? "bell" },
     iconColor:
       values["icon-color"] === undefined
         ? defaults.iconColor

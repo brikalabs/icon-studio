@@ -4,7 +4,7 @@ import {
   type Background,
   backgroundPresets,
   buildIconSvg,
-  ensureBrandIcons,
+  ensureIconLibrary,
   searchIcons,
 } from "@brika/icon-studio-core";
 import { HELP_TEXT, parseCliArgs } from "./args";
@@ -18,8 +18,9 @@ function describeBackground(background: Background): string {
 
 async function main(argv: readonly string[]): Promise<number> {
   const command = parseCliArgs(argv, (path) => readFileSync(path, "utf8"));
-  if (command.library === "brand" || command.spec.icon.type === "brand") {
-    await ensureBrandIcons();
+  await ensureIconLibrary(command.library);
+  if (command.spec.icon.type !== "custom") {
+    await ensureIconLibrary(command.spec.icon.type);
   }
 
   switch (command.kind) {

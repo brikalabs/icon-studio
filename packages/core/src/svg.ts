@@ -1,6 +1,6 @@
-import { getBrandIcon } from "./brands";
 import { embedCustomSvg } from "./custom-svg";
-import { getLucideIconNode, LUCIDE_GRID, serializeIconNode } from "./lucide";
+import { LUCIDE_GRID, serializeIconNode } from "./icon-node";
+import { getIconGlyph } from "./libraries";
 import {
   type Background,
   type GradientStop,
@@ -134,31 +134,23 @@ function renderIconLayer(spec: IconSpec): string {
     return `<g transform="rotate(${formatNumber(spec.rotation)} ${formatNumber(cx)} ${formatNumber(cy)})">${embedded}</g>`;
   }
 
-  if (spec.icon.type === "brand") {
-    const brand = getBrandIcon(spec.icon.name);
-    if (!brand) {
-      throw new Error(`unknown brand icon "${spec.icon.name}"`);
-    }
-    const attributes = serializeAttributes({
-      transform: gridTransform(box, spec.rotation),
-      fill: spec.iconColor,
-    });
-    return `<g${attributes}><path d="${brand.path}"/></g>`;
+  const glyph = getIconGlyph(spec.icon.type, spec.icon.name);
+  if (!glyph) {
+    throw new Error(`unknown ${spec.icon.type} icon "${spec.icon.name}"`);
   }
-
-  const node = getLucideIconNode(spec.icon.name);
-  if (!node) {
-    throw new Error(`unknown lucide icon "${spec.icon.name}"`);
-  }
-  const attributes = serializeAttributes({
-    transform: gridTransform(box, spec.rotation),
-    fill: "none",
-    stroke: spec.iconColor,
-    "stroke-width": formatNumber(spec.strokeWidth),
-    "stroke-linecap": "round",
-    "stroke-linejoin": "round",
-  });
-  return `<g${attributes}>${serializeIconNode(node)}</g>`;
+  const transform = gridTransform(box, spec.rotation);
+  const attributes =
+    glyph.kind === "fill"
+      ? serializeAttributes({ transform, fill: spec.iconColor })
+      : serializeAttributes({
+          transform,
+          fill: "none",
+          stroke: spec.iconColor,
+          "stroke-width": formatNumber(spec.strokeWidth),
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+        });
+  return `<g${attributes}>${serializeIconNode(glyph.node)}</g>`;
 }
 
 /**

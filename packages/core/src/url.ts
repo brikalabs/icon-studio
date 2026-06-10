@@ -5,6 +5,7 @@ import {
   type GradientStop,
   hexColorSchema,
   type IconSpec,
+  iconLibraryIdSchema,
   iconSpecSchema,
 } from "./types";
 
@@ -21,9 +22,10 @@ import {
  * typical link looks like `?i=rocket&p=sunset`. Pasted custom SVGs are
  * deliberately not serialized (they would not fit in a URL).
  *
- * Keys: i icon, b brand icon, p preset, c solid color, g/rg linear/radial
- * stops, a angle, rc radial center, rr radial radius, sz canvas, ic icon
- * color, sc scale, x/y offset, ro rotation, sw stroke width, n noise.
+ * Keys: i icon, l library (when not lucide), p preset, c solid color,
+ * g/rg linear/radial stops, a angle, rc radial center, rr radial radius,
+ * sz canvas, ic icon color, sc scale, x/y offset, ro rotation, sw stroke
+ * width, n noise.
  */
 
 const PERCENT = 100;
@@ -157,10 +159,13 @@ export function specToSearchParams(spec: IconSpec): URLSearchParams {
   const defaults = createDefaultIconSpec();
   const params = new URLSearchParams();
 
-  if (spec.icon.type === "brand") {
-    params.set("b", spec.icon.name);
-  } else if (spec.icon.type === "lucide" && spec.icon.name !== "bell") {
-    params.set("i", spec.icon.name);
+  if (spec.icon.type !== "custom") {
+    if (spec.icon.type !== "lucide" || spec.icon.name !== "bell") {
+      params.set("i", spec.icon.name);
+    }
+    if (spec.icon.type !== "lucide") {
+      params.set("l", spec.icon.type);
+    }
   }
   if (!sameBackground(spec.background, defaults.background)) {
     writeBackground(params, spec.background);
@@ -195,14 +200,14 @@ export function specToSearchParams(spec: IconSpec): URLSearchParams {
 /** Tolerant decode: anything missing or malformed falls back to defaults. */
 export function specFromSearchParams(params: URLSearchParams): IconSpec {
   const defaults = createDefaultIconSpec();
-  const brand = params.get("b");
+  const library = iconLibraryIdSchema.safeParse(params.get("l") ?? "lucide");
   const candidate: IconSpec = {
     canvasSize: readNumber(params.get("sz")) ?? defaults.canvasSize,
     background: readBackground(params, defaults.background),
-    icon:
-      brand !== null
-        ? { type: "brand", name: brand }
-        : { type: "lucide", name: params.get("i") ?? "bell" },
+    icon: {
+      type: library.success ? library.data : "lucide",
+      name: params.get("i") ?? "bell",
+    },
     iconColor: readColor(params.get("ic")) ?? defaults.iconColor,
     iconScale: (readNumber(params.get("sc")) ?? defaults.iconScale * PERCENT) / PERCENT,
     offsetX: readNumber(params.get("x")) ?? 0,

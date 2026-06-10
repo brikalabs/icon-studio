@@ -17,11 +17,15 @@
     "deploy": "bun run --filter @brika/icon-studio-web deploy",
     "test": "bun test packages",
     "typecheck": "bun run --filter '*' typecheck",
-    "lint": "bunx --bun biome check ."
+    "lint": "bunx --bun biome check .",
+    "sync:icons": "bun scripts/sync-icon-data.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
+    "@tabler/icons": "^3.44.0",
     "@types/bun": "^1.3.5",
-    "typescript": "^6.0.3"
+    "heroicons": "^2.2.0",
+    "typescript": "^6.0.3",
+    "zod": "^4.4.3"
   }
 }

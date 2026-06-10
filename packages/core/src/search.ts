@@ -1,36 +1,12 @@
-import { getBrandIcon, getBrandIconNames } from "./brands";
-import { getLucideIconTags, lucideIconNames } from "./lucide";
-
-export type IconLibraryId = "lucide" | "brand";
-
-export interface IconLibraryInfo {
-  readonly id: IconLibraryId;
-  readonly label: string;
-}
-
-/** The searchable icon libraries, in display order. */
-export const iconLibraries: readonly IconLibraryInfo[] = [
-  { id: "lucide", label: "Icons" },
-  { id: "brand", label: "Brands" },
-];
-
-/** Brand names are empty until `ensureBrandIcons()` has resolved. */
-export function getIconNames(library: IconLibraryId): readonly string[] {
-  return library === "lucide" ? lucideIconNames : getBrandIconNames();
-}
-
-function searchTerms(library: IconLibraryId, name: string): readonly string[] {
-  if (library === "lucide") {
-    return getLucideIconTags(name);
-  }
-  const brand = getBrandIcon(name);
-  return brand ? [brand.title.toLowerCase()] : [];
-}
+import { getIconNames, getIconTerms } from "./libraries";
+import type { IconLibraryId } from "./types";
 
 /**
  * Name-and-keyword substring search over one icon library.
- * Ranks name prefixes first, then name substrings, then keyword matches.
- * An empty query returns the library's full catalogue.
+ * Ranks name prefixes first, then name substrings, then keyword matches
+ * (lucide/tabler tags, brand titles). An empty query returns the library's
+ * full catalogue. Lazy libraries return nothing until ensureIconLibrary
+ * has resolved.
  */
 export function searchIcons(
   library: IconLibraryId,
@@ -47,7 +23,7 @@ export function searchIcons(
   for (const name of catalogue) {
     if (name.includes(needle)) {
       matches.push({ name, rank: name.startsWith(needle) ? 0 : 1 });
-    } else if (searchTerms(library, name).some((term) => term.includes(needle))) {
+    } else if (getIconTerms(library, name).some((term) => term.includes(needle))) {
       matches.push({ name, rank: 2 });
     }
   }

@@ -44,13 +44,11 @@ export const backgroundSchema = z.discriminatedUnion("type", [
   radialBackgroundSchema,
 ]);
 
-export const lucideIconSourceSchema = z.object({
-  type: z.literal("lucide"),
-  name: z.string().min(1),
-});
+export const iconLibraryIdSchema = z.enum(["lucide", "tabler", "hero", "brand"]);
+export type IconLibraryId = z.infer<typeof iconLibraryIdSchema>;
 
-export const brandIconSourceSchema = z.object({
-  type: z.literal("brand"),
+export const libraryIconSourceSchema = z.object({
+  type: iconLibraryIdSchema,
   name: z.string().min(1),
 });
 
@@ -59,11 +57,7 @@ export const customIconSourceSchema = z.object({
   svg: z.string().min(1),
 });
 
-export const iconSourceSchema = z.discriminatedUnion("type", [
-  lucideIconSourceSchema,
-  brandIconSourceSchema,
-  customIconSourceSchema,
-]);
+export const iconSourceSchema = z.union([libraryIconSourceSchema, customIconSourceSchema]);
 
 export const iconSpecSchema = z.object({
   /** Edge length of the square canvas, in pixels. */

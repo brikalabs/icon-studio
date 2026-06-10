@@ -1,9 +1,15 @@
 import { beforeAll, describe, expect, test } from "bun:test";
-import { ensureBrandIcons } from "./brands";
+import { ensureIconLibrary } from "./libraries";
 import { buildIconSvg, linearGradientEndpoints, suggestFileName } from "./svg";
 import { createDefaultIconSpec } from "./types";
 
-beforeAll(ensureBrandIcons);
+beforeAll(async () => {
+  await Promise.all([
+    ensureIconLibrary("tabler"),
+    ensureIconLibrary("hero"),
+    ensureIconLibrary("brand"),
+  ]);
+});
 
 describe("buildIconSvg", () => {
   test("builds a square SVG with a linear gradient by default", () => {
@@ -85,6 +91,14 @@ describe("buildIconSvg", () => {
     expect(svg).toContain("<path d=");
   });
 
+  test("tabler and hero icons render as stroked glyphs", () => {
+    for (const library of ["tabler", "hero"] as const) {
+      const svg = buildIconSvg({ icon: { type: library, name: "bell" } });
+      expect(svg).toContain('stroke="#FFFFFF"');
+      expect(svg).toContain('stroke-linecap="round"');
+    }
+  });
+
   test("noise adds a turbulence grain layer above the icon", () => {
     const svg = buildIconSvg({ noise: 0.4 });
     expect(svg).toContain("<feTurbulence");
@@ -98,9 +112,12 @@ describe("buildIconSvg", () => {
     expect(buildIconSvg({ noise: 0 })).not.toContain("feTurbulence");
   });
 
-  test("unknown icon names throw a clear error", () => {
+  test("unknown icon names throw a clear error naming the library", () => {
     expect(() => buildIconSvg({ icon: { type: "lucide", name: "not-a-real-icon" } })).toThrow(
       'unknown lucide icon "not-a-real-icon"',
+    );
+    expect(() => buildIconSvg({ icon: { type: "tabler", name: "not-a-real-icon" } })).toThrow(
+      'unknown tabler icon "not-a-real-icon"',
     );
     expect(() => buildIconSvg({ icon: { type: "brand", name: "not-a-real-brand" } })).toThrow(
       'unknown brand icon "not-a-real-brand"',

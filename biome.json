@@ -10,12 +10,14 @@
     "includes": [
       "apps/**",
       "packages/**",
+      "scripts/**",
       "*.json",
       "!biome.json",
       "!**/node_modules",
       "!**/dist",
       "!**/coverage",
-      "!**/*.md"
+      "!**/*.md",
+      "!packages/core/src/data"
     ]
   },
   "formatter": {

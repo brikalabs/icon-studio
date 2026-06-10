@@ -1,7 +1,9 @@
 import {
   createDefaultIconSpec,
-  ensureBrandIcons,
+  ensureIconLibrary,
+  type IconLibraryId,
   type IconSpec,
+  isIconLibraryReady,
   specFromSearchParams,
   specToSearchParams,
   suggestFileName,
@@ -18,8 +20,8 @@ interface EditorState {
   fileName: string | null;
   /** Whether the icon layer is selected, which shows the transform handles. */
   selected: boolean;
-  /** True once the lazy simple-icons catalogue has loaded. */
-  brandsReady: boolean;
+  /** Bumps when a lazy icon catalogue finishes loading, so views recompute. */
+  catalogueVersion: number;
   past: IconSpec[];
   future: IconSpec[];
   lastEditAt: number;
@@ -28,8 +30,8 @@ interface EditorState {
   markUndoBoundary: () => void;
   setFileName: (name: string | null) => void;
   setSelected: (selected: boolean) => void;
-  /** Loads the brand catalogue chunk; safe to call repeatedly. */
-  loadBrands: () => Promise<void>;
+  /** Loads a lazy icon catalogue chunk; safe to call repeatedly. */
+  loadLibrary: (id: IconLibraryId) => Promise<void>;
   undo: () => void;
   redo: () => void;
 }
@@ -45,7 +47,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   spec: initialSpec(),
   fileName: null,
   selected: false,
-  brandsReady: false,
+  catalogueVersion: 0,
   past: [],
   future: [],
   lastEditAt: 0,
@@ -64,9 +66,12 @@ export const useEditorStore = create<EditorState>((set) => ({
   markUndoBoundary: () => set({ lastEditAt: 0 }),
   setFileName: (name) => set({ fileName: name }),
   setSelected: (selected) => set({ selected }),
-  loadBrands: async () => {
-    await ensureBrandIcons();
-    set({ brandsReady: true });
+  loadLibrary: async (id) => {
+    if (isIconLibraryReady(id)) {
+      return;
+    }
+    await ensureIconLibrary(id);
+    set((state) => ({ catalogueVersion: state.catalogueVersion + 1 }));
   },
   undo: () =>
     set((state) => {
