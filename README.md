@@ -81,7 +81,7 @@ bun packages/cli/src/index.ts --custom logo.svg --preset ocean
 The repo's own `apps/web/public/favicon.svg` is generated with it:
 
 ```sh
-bun packages/cli/src/index.ts layout-grid --preset raycast --scale 0.5 -o apps/web/public/favicon.svg
+bun packages/cli/src/index.ts layout-grid --preset iris --scale 0.5 -o apps/web/public/favicon.svg
 ```
 
 ## Deploy

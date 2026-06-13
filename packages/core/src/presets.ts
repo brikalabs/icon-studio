@@ -27,7 +27,7 @@ function solid(id: string, color: string): BackgroundPreset {
 
 /** Curated background presets shown in the editor and addressable from the CLI. */
 export const backgroundPresets: readonly BackgroundPreset[] = [
-  linear("raycast", 45, "#3F5EFB", "#FC466B"),
+  linear("iris", 45, "#3F5EFB", "#FC466B"),
   linear("berry", 45, "#8E2DE2", "#4A00E0"),
   linear("sunset", 45, "#FF512F", "#F09819"),
   linear("ocean", 45, "#2193B0", "#6DD5ED"),
