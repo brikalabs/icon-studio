@@ -1,6 +1,6 @@
 {
   "name": "@brika/icon-studio",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Generate square SVG plugin icons from the command line: 200k+ glyphs, gradients, monograms, film grain.",
   "keywords": [

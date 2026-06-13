@@ -1,6 +1,12 @@
 # Changelog
 
 
+## v0.1.1
+
+Maintenance release. Validates the automated npm publish pipeline (GitHub
+Actions Trusted Publishing / OIDC). No changes to the CLI itself.
+
+
 ## v0.1.0
 
 Initial release of `@brika/icon-studio` — the `brika-icon` command-line tool.
