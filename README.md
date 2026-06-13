@@ -46,7 +46,7 @@ Built with [Clay](https://clay.brika.dev), Brika's design system.
 | Workspace | Package | What it does |
 | --- | --- | --- |
 | `packages/core` | `@brika/icon-studio-core` | Pure SVG composition engine: `IconSpec` (zod), `buildIconSvg`, presets, icon catalogues + search, share-URL codec. No DOM, no React. |
-| `packages/cli` | `@brika/icon-studio-cli` | `brika-icon`, generate icons from the terminal. |
+| `packages/cli` | `@brika/icon-studio` | `brika-icon`, generate icons from the terminal ([published on npm](https://www.npmjs.com/package/@brika/icon-studio)). |
 | `apps/web` | `@brika/icon-studio-web` | The editor: Vite + React + Clay, deployed on Cloudflare Workers. |
 
 Everything renders through the same `buildIconSvg`, so the web preview, the CLI
