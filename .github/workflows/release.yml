@@ -1,14 +1,19 @@
 name: Release
 
-# Publishes @brika/icon-studio to npm whenever a version tag is pushed.
+# Publishes @brika/icon-studio to npm via npm Trusted Publishing (OIDC) — no
+# NPM_TOKEN required. One-time setup: on npmjs.com (or `npm trust`) register a
+# trusted publisher for the package pointing at this repo + this workflow file
+# (release.yml). Provenance attestations are generated automatically.
+#
 # Cut a release locally with `bun run release` (bumps the version, updates the
-# changelog, commits, and creates the v<version> tag), then `git push --follow-tags`.
+# changelog, commits, creates the v<version> tag), then `git push --follow-tags`.
 on:
   push:
     tags:
       - "v*"
 
 permissions:
+  id-token: write # OIDC: mint the short-lived npm credential + provenance
   contents: write # create the GitHub Release
 
 jobs:
@@ -21,21 +26,26 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
       - run: bun install --frozen-lockfile
 
       # Gate the publish on a green build.
       - run: bun run typecheck
       - run: bun test packages
 
-      - name: Authenticate with npm
-        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Trusted publishing needs npm >= 11.5.1; runners ship an older npm.
+      - run: npm install -g npm@latest
 
-      # `prepack` runs build.ts, so the bundle is produced fresh here.
-      - name: Publish to npm
+      # `prepack` (build.ts) runs during publish, so the bundle is built here.
+      # bun publish has no OIDC support, so the publish itself uses npm.
+      - name: Publish to npm (OIDC + provenance)
         working-directory: packages/cli
-        run: bun publish --access public
+        env:
+          NPM_CONFIG_PROVENANCE: "true"
+        run: npm publish
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
