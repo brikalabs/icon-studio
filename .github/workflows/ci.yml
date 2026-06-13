@@ -18,3 +18,4 @@ jobs:
       - run: bun test packages
       - run: bun run lint
       - run: bun run build
+      - run: bun run build:cli # verify the publishable @brika/icon-studio bundle

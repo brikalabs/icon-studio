@@ -1,0 +1,43 @@
+name: Release
+
+# Publishes @brika/icon-studio to npm whenever a version tag is pushed.
+# Cut a release locally with `bun run release` (bumps the version, updates the
+# changelog, commits, and creates the v<version> tag), then `git push --follow-tags`.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # create the GitHub Release
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+
+      # Gate the publish on a green build.
+      - run: bun run typecheck
+      - run: bun test packages
+
+      - name: Authenticate with npm
+        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # `prepack` runs build.ts, so the bundle is produced fresh here.
+      - name: Publish to npm
+        working-directory: packages/cli
+        run: bun publish --access public
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
