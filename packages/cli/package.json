@@ -1,20 +1,56 @@
 {
-  "name": "@brika/icon-studio-cli",
+  "name": "@brika/icon-studio",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
-  "description": "Generate Brika plugin icons from the command line",
+  "description": "Generate square SVG plugin icons from the command line: 200k+ glyphs, gradients, monograms, film grain.",
+  "keywords": [
+    "icon",
+    "icons",
+    "svg",
+    "cli",
+    "icon-generator",
+    "gradient",
+    "favicon",
+    "monogram",
+    "lucide",
+    "simple-icons",
+    "iconify",
+    "brika"
+  ],
+  "license": "MIT",
+  "author": "Brika Labs",
+  "homepage": "https://icon.brika.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brikalabs/icon-studio.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/brikalabs/icon-studio/issues"
+  },
   "bin": {
-    "brika-icon": "./src/index.ts"
+    "brika-icon": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
+    "build": "bun run build.ts",
+    "prepack": "bun run build.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@brika/icon-studio-core": "workspace:*"
-  },
   "devDependencies": {
+    "@brika/icon-studio-core": "workspace:*",
     "typescript": "^6.0.3"
   }
 }
